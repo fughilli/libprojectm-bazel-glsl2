@@ -26,20 +26,17 @@ public:
 
  virtual ~MilkdropPresetFactory();
 
- std::unique_ptr<Preset> allocate(const std::string & url, const std::string & name = std::string(),
+ std::auto_ptr<Preset> allocate(const std::string & url, const std::string & name = std::string(),
 	const std::string & author = std::string());
 
  std::string supportedExtensions() const { return "milk prjm"; }
 
- // called by ~MilkdropPreset
-  void releasePreset(Preset *preset);
-
 private:
     static PresetOutputs* createPresetOutputs(int gx, int gy);
 	void reset();
-	int gx;
-	int gy;
-	PresetOutputs * _presetOutputsCache;
+	PresetOutputs * _presetOutputs;
+    PresetOutputs * _presetOutputs2;
+    bool _usePresetOutputs;
 	//PresetInputs _presetInputs;
 };
 

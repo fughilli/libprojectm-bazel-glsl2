@@ -133,35 +133,34 @@ out << "[preset00]\n" <<
 "shape_4_per_frame3=rad = rad + bass * 0.1;\n" <<
 "shape_4_per_frame4=a = q3;\n" <<
 "shape_4_per_frame5=a2 = q3;\n" <<
-// disabling projectM logo thingey
-// "shapecode_6_enabled=1\n" <<
-// "shapecode_6_sides=4\n" <<
-// "shapecode_6_additive=0\n" <<
-// "shapecode_6_thickOutline=0\n" <<
-// "shapecode_6_textured=1\n" <<
-// "shapecode_6_ImageURL=project.tga\n" <<
-// "shapecode_6_x=0.38\n" <<
-// "shapecode_6_y=0.435\n" <<
-// "shapecode_6_rad=0.8\n" <<
-// "shapecode_6_ang=0\n" <<
-// "shapecode_6_tex_ang=0\n" <<
-// "shapecode_6_tex_zoom=0.71\n" <<
-// "shapecode_6_r=1\n" <<
-// "shapecode_6_g=1\n" <<
-// "shapecode_6_b=1\n" <<
-// "shapecode_6_a=1\n" <<
-// "shapecode_6_r2=1\n" <<
-// "shapecode_6_g2=1\n" <<
-// "shapecode_6_b2=1\n" <<
-// "shapecode_6_a2=1\n" <<
-// "shapecode_6_border_r=0\n" <<
-// "shapecode_6_border_g=0\n" <<
-// "shapecode_6_border_b=0\n" <<
-// "shapecode_6_border_a=0\n" <<
-// "shape_6_per_frame1=x = x + q1;\n" <<
-// "shape_6_per_frame2=y = y + q2;\n" <<
-// "shape_6_per_frame3=a = q3;\n" <<
-// "shape_6_per_frame4=a2 = q3;\n" <<
+"shapecode_6_enabled=1\n" <<
+"shapecode_6_sides=4\n" <<
+"shapecode_6_additive=0\n" <<
+"shapecode_6_thickOutline=0\n" <<
+"shapecode_6_textured=1\n" <<
+"shapecode_6_ImageURL=project.tga\n" <<
+"shapecode_6_x=0.38\n" <<
+"shapecode_6_y=0.435\n" <<
+"shapecode_6_rad=0.8\n" <<
+"shapecode_6_ang=0\n" <<
+"shapecode_6_tex_ang=0\n" <<
+"shapecode_6_tex_zoom=0.71\n" <<
+"shapecode_6_r=1\n" <<
+"shapecode_6_g=1\n" <<
+"shapecode_6_b=1\n" <<
+"shapecode_6_a=1\n" <<
+"shapecode_6_r2=1\n" <<
+"shapecode_6_g2=1\n" <<
+"shapecode_6_b2=1\n" <<
+"shapecode_6_a2=1\n" <<
+"shapecode_6_border_r=0\n" <<
+"shapecode_6_border_g=0\n" <<
+"shapecode_6_border_b=0\n" <<
+"shapecode_6_border_a=0\n" <<
+"shape_6_per_frame1=x = x + q1;\n" <<
+"shape_6_per_frame2=y = y + q2;\n" <<
+"shape_6_per_frame3=a = q3;\n" <<
+"shape_6_per_frame4=a2 = q3;\n" <<
 "per_frame_1=ob_r = 0.5 + 0.4*sin(time*1.324);\n" <<
 "per_frame_2=ob_g = 0.5 + 0.4*cos(time*1.371);\n" <<
 "per_frame_3=ob_b = 0.5+0.4*sin(2.332*time);\n" <<
@@ -198,13 +197,13 @@ return out.str();
 
 }
 
-std::unique_ptr<Preset> IdlePresets::allocate(MilkdropPresetFactory *factory, const std::string & name, PresetOutputs & presetOutputs)
+std::auto_ptr<Preset> IdlePresets::allocate(const std::string & name, PresetOutputs & presetOutputs)
 {
 
   if (name == IDLE_PRESET_NAME) {
   	std::istringstream in(presetText());
-  	return std::unique_ptr<Preset>(new MilkdropPreset(factory, in, IDLE_PRESET_NAME, presetOutputs));
+  	return std::auto_ptr<Preset>(new MilkdropPreset(in, IDLE_PRESET_NAME, presetOutputs));
   }
   else
-    return std::unique_ptr<Preset>();
+	return std::auto_ptr<Preset>(0);
 }

@@ -10,16 +10,17 @@
 
 #include <string>
 #include <map>
-#include "Texture.hpp"
+#include "UserTexture.hpp"
 
 class Shader
 {
 public:
 
-    std::map<std::string, TextureSamplerDesc> textures;
+    std::map<std::string, UserTexture*> textures;
 
-    std::string programSource;
-    std::string presetPath;
+    bool enabled;
+
+	std::string programSource;
 
 	Shader();
 };

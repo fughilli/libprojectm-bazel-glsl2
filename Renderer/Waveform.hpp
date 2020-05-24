@@ -21,7 +21,7 @@ public:
 	float b;
 	float a;
 
-    ColoredPoint():x(0.5),y(0.5),r(1),g(1),b(1),a(1){}
+	ColoredPoint():x(0.5),y(0.5),r(1),g(1),b(1),a(1){};
 };
 
 class WaveformContext
@@ -34,7 +34,7 @@ public:
 	float right;
 	BeatDetect *music;
 
-    WaveformContext(int _samples, BeatDetect *_music):samples(_samples),music(_music){}
+	WaveformContext(int samples, BeatDetect *music):samples(samples),music(music){};
 };
 
 
@@ -52,8 +52,7 @@ public:
     float smoothing; /* smooth factor of waveform */
     int sep;  /* no idea what this is yet... */
 
-    Waveform(int _samples);
-    void InitVertexAttrib();
+    Waveform(int samples);
     void Draw(RenderContext &context);
 
 private:

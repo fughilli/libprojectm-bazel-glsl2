@@ -26,12 +26,6 @@ public:
         pthread_cond_init(&condition_work_done, NULL);
     }
 
-    void reset()
-    {
-        there_is_work_to_do = false;
-        finished = false;
-    }
-
     // called by foreground
     void wake_up_bg()
     {
@@ -50,7 +44,7 @@ public:
         pthread_mutex_unlock(&mutex);
     }
 
-    // called by foreground() when shutting down, background thread should exit
+    // called by foreground()
     void finish_up()
     {
         pthread_mutex_lock(&mutex);

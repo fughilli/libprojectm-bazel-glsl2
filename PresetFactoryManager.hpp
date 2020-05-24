@@ -48,7 +48,6 @@ class PresetFactoryManager {
 		/// \param extension the file name extension to verify
 		/// \returns true if a factory exists, false otherwise
 		bool extensionHandled(const std::string & extension) const;
-		std::unique_ptr<Preset> allocate(const std::string & url, const std::string & name);
 
 	private:
 		int _gx, _gy;				

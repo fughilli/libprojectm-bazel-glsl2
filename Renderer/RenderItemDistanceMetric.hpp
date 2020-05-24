@@ -19,7 +19,6 @@
 /// when they are dissimilar. If two render items cannot be compared, NOT_COMPARABLE_VALUE is returned.
 class RenderItemDistanceMetric : public std::binary_function<const RenderItem*, const RenderItem*, double> {
 public:
-  virtual ~RenderItemDistanceMetric() { }
   const static double NOT_COMPARABLE_VALUE;
   virtual double operator()(const RenderItem * r1, const RenderItem * r2) const = 0;
   virtual TypeIdPair typeIdPair() const = 0;
@@ -104,11 +103,7 @@ typedef std::map<TypeIdPair, RenderItemDistanceMetric*> DistanceMetricMap;
 public:
 
 	MasterRenderItemDistance() {}
-    virtual ~MasterRenderItemDistance() {
-        for (DistanceMetricMap::iterator it = _distanceMetricMap.begin(); it != _distanceMetricMap.end(); ++it)
-            delete (it->second);
-        _distanceMetricMap.clear();
-    }
+	virtual ~MasterRenderItemDistance() {}
 
 	inline void addMetric(RenderItemDistanceMetric * fun) {
 		_distanceMetricMap[fun->typeIdPair()] = fun;

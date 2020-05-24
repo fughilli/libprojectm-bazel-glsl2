@@ -47,7 +47,6 @@
 #include "InitCond.hpp"
 #include "Preset.hpp"
 
-class MilkdropPresetFactory;
 class CustomWave;
 class CustomShape;
 class InitCond;
@@ -64,14 +63,14 @@ public:
   /// \param MilkdropPresetName a descriptive name for the MilkdropPreset. Usually just the file name
   /// \param MilkdropPresetInputs a reference to read only projectM engine variables
   /// \param MilkdropPresetOutputs initialized and filled with data parsed from a MilkdropPreset
-  MilkdropPreset(MilkdropPresetFactory *factory, const std::string & absoluteFilePath, const std::string & milkdropPresetName, PresetOutputs & presetOutputs);
+  MilkdropPreset(const std::string & absoluteFilePath, const std::string & milkdropPresetName, PresetOutputs & presetOutputs);
 
   ///  Load a MilkdropPreset from an input stream with input and output buffers specified.
   /// \param in an already initialized input stream to read the MilkdropPreset file from
   /// \param MilkdropPresetName a descriptive name for the MilkdropPreset. Usually just the file name
   /// \param MilkdropPresetInputs a reference to read only projectM engine variables
   /// \param MilkdropPresetOutputs initialized and filled with data parsed from a MilkdropPreset
-  MilkdropPreset(MilkdropPresetFactory *factory, std::istream & in, const std::string & milkdropPresetName, PresetOutputs & presetOutputs);
+  MilkdropPreset(std::istream & in, const std::string & milkdropPresetName, PresetOutputs & presetOutputs);
 
   ~MilkdropPreset();
 
@@ -96,7 +95,7 @@ public:
 
   /// Used by parser
   /// @bug refactor
-  int add_per_pixel_eqn( char *name, Expr *gen_expr );
+  int add_per_pixel_eqn( char *name, GenExpr *gen_expr );
 
   /// Accessor method to retrieve the absolute file path of the loaded MilkdropPreset
   /// \returns a file path string
@@ -130,7 +129,6 @@ public:
   /* Data structures that contain equation and initial condition information */
   std::vector<PerFrameEqn*>  per_frame_eqn_tree;   /* per frame equations */
   std::map<int, PerPixelEqn*>  per_pixel_eqn_tree; /* per pixel equation tree */
-  Expr *per_pixel_program;
   std::map<std::string,InitCond*>  per_frame_init_eqn_tree; /* per frame initial equations */
   std::map<std::string,InitCond*>  init_cond_tree; /* initial conditions */
   std::map<std::string,Param*> user_param_tree; /* user parameter splay tree */
@@ -175,14 +173,11 @@ private:
 
   void preloadInitialize();
   void postloadInitialize();
-
-  MilkdropPresetFactory *_factory;
+  
   PresetOutputs & _presetOutputs;
 
 template <class CustomObject>
 void transfer_q_variables(std::vector<CustomObject*> & customObjects);
-
-friend class MilkdropPresetFactory;
 };
 
 

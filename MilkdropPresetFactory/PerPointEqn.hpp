@@ -30,17 +30,19 @@
 #define _PER_POINT_EQN_H
 
 class CustomWave;
-class Expr;
+class GenExpr;
 class Param;
 class PerPointEqn;
 
 class PerPointEqn {
 public:
     int index;
-    Expr * assign_expr;
+    int samples; // the number of samples to iterate over
+    Param *param;
+    GenExpr * gen_expr;
     ~PerPointEqn();
     void evaluate(int i);
-    PerPointEqn( int index, Param *param, Expr *gen_expr );
+    PerPointEqn( int index, Param *param, GenExpr *gen_expr, int samples);
  };
 
 

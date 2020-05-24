@@ -40,14 +40,14 @@
 CustomShape::CustomShape() : Shape()
 {
 	CustomShape(0);
-}
+};
 
-CustomShape::CustomShape ( int _id ) : Shape()
+CustomShape::CustomShape ( int id ) : Shape()
 {
 
 	Param * param;
 
-    this->id = _id;
+	this->id = id;
 	this->per_frame_count = 0;
 
 	/* Start: Load custom shape parameters */
@@ -208,12 +208,12 @@ CustomShape::CustomShape ( int _id ) : Shape()
 		abort();
 	}
 
-   for (unsigned int i = 0; i < NUM_Q_VARIABLES;i++) {
+   for (unsigned int i = 1; i <= NUM_Q_VARIABLES;i++) {
 	std::ostringstream os;
-	os << "q" << i+1;
+	os << "q" << i;
 	param = Param::new_param_float ( os.str().c_str(), P_FLAG_QVAR, &this->q[i], NULL, MAX_DOUBLE_SIZE,
 		 -MAX_DOUBLE_SIZE, 0.0 );
-    if ( !ParamUtils::insert ( param, &this->param_tree ) )
+	if ( ParamUtils::insert ( param, &this->param_tree ) < 0 )
 	{
 		abort();
 	}

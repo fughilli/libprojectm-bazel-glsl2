@@ -42,20 +42,15 @@ public:
 	 float blur1ed;
 
 	 Shader warpShader;
-     std::string warpShaderFilename;
 	 Shader compositeShader;
-     std::string compositeShaderFilename;
 
 	 std::vector<RenderItem*> drawables;
 	 std::vector<RenderItem*> compositeDrawables;
 
 	 Pipeline();
-     void setStaticPerPixel(int _gx, int _gy);
+	 void setStaticPerPixel(int gx, int gy);
 	 virtual ~Pipeline();
 	 virtual PixelPoint PerPixel(PixelPoint p, const PerPixelContext context);
 };
-
-float **alloc_mesh(size_t gx, size_t gy);
-float **free_mesh(float **mesh);
 
 #endif

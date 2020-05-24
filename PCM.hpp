@@ -31,11 +31,6 @@
 
 #include "dlldefs.h"
 
-
-// 1024 is more computationally intensive, but maybe better at detecting lower bass
-#define FFT_LENGTH 1024
-
-
 class 
 #ifdef WIN32 
 DLLEXPORT 
@@ -57,14 +52,14 @@ public:
     float *pcmdataR;     //holder for most recent pcm data
 
     /** PCM data */
-    float vdataL[FFT_LENGTH];  //holders for FFT data (spectrum)
-    float vdataR[FFT_LENGTH];
+    float vdataL[512];  //holders for FFT data (spectrum)
+    float vdataR[512];
 
     static int maxsamples;
     PCM();
     ~PCM();
+    void initPCM(int maxsamples);
     void addPCMfloat(const float *PCMdata, int samples);
-    void addPCMfloat_2ch(const float *PCMdata, int samples);
     void addPCM16(short [2][512]);
     void addPCM16Data(const short* pcm_data, short samples);
     void addPCM8( unsigned char [2][1024]);
@@ -73,8 +68,6 @@ public:
     void freePCM();
     int getPCMnew(float *PCMdata, int channel, int freq, float smoothing, int derive,int reset);
 
-private:
-    void _initPCM(int maxsamples);
 
   };
 

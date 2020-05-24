@@ -19,7 +19,6 @@
 #include "NativePresetFactory/NativePresetFactory.hpp"
 #endif
 
-#include "Common.hpp"
 #include <sstream>
 PresetFactoryManager::PresetFactoryManager() : _gx(0), _gy(0), initialized(false) {}
 
@@ -76,29 +75,11 @@ void PresetFactoryManager::registerFactory(const std::string & extensions, Prese
 	}
 }
 
-
-
-std::unique_ptr<Preset> PresetFactoryManager::allocate(const std::string & url, const std::string & name)
-{
-	try {
-		const std::string extension = parseExtension (url);
-
-		return factory(extension).allocate(url, name);
-	} catch (const PresetFactoryException & e) {
-		throw e;
-	} catch (const std::exception & e) {
-		throw PresetFactoryException(e.what());
-	} catch (...) {
-		throw PresetFactoryException("uncaught preset factory exception");
-	}
-    return std::unique_ptr<Preset>();
-}
-
 PresetFactory & PresetFactoryManager::factory(const std::string & extension) {
 
-	if (!extensionHandled(extension)) {
+	if (!_factoryMap.count(extension)) {		
 		std::ostringstream os;
-		os << "No  preset factory associated with \"" << extension << "\"." << std::endl;
+		os << "No factory associated with \"" << extension << "\"." << std::endl;
 		throw PresetFactoryException(os.str());
 	}
 	return *_factoryMap[extension];

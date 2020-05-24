@@ -32,7 +32,7 @@
 #define CUSTOM_WAVE_DEBUG 0
 
 class CustomWave;
-class Expr;
+class GenExpr;
 class PerPointEqn;
 class Preset;
 
@@ -56,7 +56,7 @@ public:
      CustomWave(int id);
 
     /** Destructor is necessary so we can free the per point matrices **/
-    virtual ~CustomWave();
+    ~CustomWave();
 
     ColoredPoint PerPoint(ColoredPoint p, const WaveformContext context);
 
@@ -80,6 +80,9 @@ public:
     float * b_mesh;
     float * g_mesh;
     float * a_mesh;
+    float * value1;
+    float * value2;
+    float * sample_mesh;
 
     bool enabled; /* if true then wave is visible, hidden otherwise */
 
@@ -105,7 +108,6 @@ public:
     std::map<std::string,InitCond*>  init_cond_tree;
     std::vector<PerFrameEqn*>  per_frame_eqn_tree;
     std::vector<PerPointEqn*>  per_point_eqn_tree;
-    Expr *per_point_program;
     std::map<std::string,InitCond*>  per_frame_init_eqn_tree;
 
     /* Denotes the index of the last character for each string buffer */
@@ -113,7 +115,7 @@ public:
     int per_frame_eqn_string_index;
     int per_frame_init_eqn_string_index;
 
-    int add_per_point_eqn(char * name, Expr * gen_expr);
+    int add_per_point_eqn(char * name, GenExpr * gen_expr);
     void evalCustomWaveInitConditions(Preset *preset);
     
 

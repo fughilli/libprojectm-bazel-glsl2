@@ -49,8 +49,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
     r(0),
     g(0),
     b(0),
-    a(0),
-    per_point_program(nullptr)
+    a(0)
 {
 
   Param * param;
@@ -62,6 +61,9 @@ CustomWave::CustomWave(int _id) : Waveform(512),
   this->a_mesh = (float*)wipemalloc(MAX_SAMPLE_SIZE*sizeof(float));
   this->x_mesh = (float*)wipemalloc(MAX_SAMPLE_SIZE*sizeof(float));
   this->y_mesh = (float*)wipemalloc(MAX_SAMPLE_SIZE*sizeof(float));
+  this->value1 = (float*) wipemalloc(MAX_SAMPLE_SIZE*sizeof(float));
+  this->value2 = (float*)wipemalloc(MAX_SAMPLE_SIZE*sizeof(float));
+  this->sample_mesh = (float*)wipemalloc(MAX_SAMPLE_SIZE*sizeof(float));
 
   /* Start: Load custom wave parameters */
 
@@ -72,7 +74,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
     abort();
   }
 
-  if (!ParamUtils::insert(param, &param_tree))
+  if (ParamUtils::insert(param, &param_tree) < 0)
   {
     /// @bug make exception
     abort();
@@ -85,7 +87,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
     abort();
   }
 
-  if (!ParamUtils::insert(param, &param_tree))
+  if (ParamUtils::insert(param, &param_tree) < 0)
   {
     ;
     /// @bug make exception
@@ -100,7 +102,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
 
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
     /// @bug make exception
@@ -114,7 +116,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
     /// @bug make exception
@@ -128,7 +130,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
     /// @bug make exception
@@ -142,7 +144,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
 
@@ -160,7 +162,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
 
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
 
@@ -178,7 +180,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
 
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
     /// @bug make exception
@@ -195,7 +197,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
 
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     /// @bug make exception
     abort();
@@ -208,7 +210,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     /// @bug make exception
     abort();
@@ -222,7 +224,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
     abort();
@@ -234,7 +236,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
     abort();
@@ -246,40 +248,40 @@ CustomWave::CustomWave(int _id) : Waveform(512),
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
     abort();
   }
 
-  if ((param = Param::new_param_float("sample", P_FLAG_READONLY | P_FLAG_NONE,
-                                      &this->sample, NULL, 1.0, 0.0, 0.0)) == NULL)
+  if ((param = Param::new_param_float("sample", P_FLAG_READONLY | P_FLAG_NONE | P_FLAG_ALWAYS_MATRIX | P_FLAG_PER_POINT,
+                                      &this->sample, this->sample_mesh, 1.0, 0.0, 0.0)) == NULL)
   {
     ;
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     abort();
   }
 
-  if ((param = Param::new_param_float("value1", P_FLAG_READONLY | P_FLAG_NONE, &this->v1, NULL, 1.0, -1.0, 0.0)) == NULL)
+  if ((param = Param::new_param_float("value1", P_FLAG_READONLY | P_FLAG_NONE | P_FLAG_ALWAYS_MATRIX | P_FLAG_PER_POINT, &this->v1, this->value1, 1.0, -1.0, 0.0)) == NULL)
   {
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     abort();
   }
 
-  if ((param = Param::new_param_float("value2", P_FLAG_READONLY | P_FLAG_NONE, &this->v2, NULL, 1.0, -1.0, 0.0)) == NULL)
+  if ((param = Param::new_param_float("value2", P_FLAG_READONLY | P_FLAG_NONE | P_FLAG_ALWAYS_MATRIX | P_FLAG_PER_POINT, &this->v2, this->value2, 1.0, -1.0, 0.0)) == NULL)
   {
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
     abort();
@@ -291,7 +293,7 @@ CustomWave::CustomWave(int _id) : Waveform(512),
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
     abort();
@@ -303,52 +305,52 @@ CustomWave::CustomWave(int _id) : Waveform(512),
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
     abort();
   }
 
-  if ((param = Param::new_param_float("t1", P_FLAG_TVAR, &this->t1, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
+  if ((param = Param::new_param_float("t1", P_FLAG_PER_POINT | P_FLAG_TVAR, &this->t1, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
   {
     ;
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
     abort();
   }
 
-  if ((param = Param::new_param_float("t2", P_FLAG_TVAR, &this->t2, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
+  if ((param = Param::new_param_float("t2",  P_FLAG_PER_POINT |P_FLAG_TVAR, &this->t2, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
   {
     ;
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     abort();
   }
 
-  if ((param = Param::new_param_float("t3", P_FLAG_TVAR, &this->t3, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
+  if ((param = Param::new_param_float("t3",  P_FLAG_PER_POINT |P_FLAG_TVAR, &this->t3, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
   {
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
 
     abort();
   }
-  if ((param = Param::new_param_float("t4", P_FLAG_TVAR, &this->t4, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
+  if ((param = Param::new_param_float("t4",  P_FLAG_PER_POINT |P_FLAG_TVAR, &this->t4, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
   {
 
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     abort();
   }
@@ -357,51 +359,51 @@ CustomWave::CustomWave(int _id) : Waveform(512),
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     abort();
   }
   
-  if ((param = Param::new_param_float("t6", P_FLAG_TVAR, &this->t6, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
+  if ((param = Param::new_param_float("t6", P_FLAG_TVAR | P_FLAG_PER_POINT, &this->t6, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
   {
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
 
     abort();
   }
-  if ((param = Param::new_param_float("t7", P_FLAG_TVAR, &this->t7, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
+  if ((param = Param::new_param_float("t7", P_FLAG_TVAR | P_FLAG_PER_POINT, &this->t7, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
   {
 
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
-  {
-    ;
-    abort();
-  }
-
-  if ((param = Param::new_param_float("t8", P_FLAG_TVAR, &this->t8, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
   {
     ;
     abort();
   }
 
-  if (!ParamUtils::insert(param, &this->param_tree))
+  if ((param = Param::new_param_float("t8", P_FLAG_TVAR | P_FLAG_PER_POINT, &this->t8, NULL, MAX_DOUBLE_SIZE, -MAX_DOUBLE_SIZE, 0.0)) == NULL)
   {
     ;
     abort();
   }
 
-  for (unsigned int i = 0; i < NUM_Q_VARIABLES;i++) {
+  if (ParamUtils::insert(param, &this->param_tree) < 0)
+  {
+    ;
+    abort();
+  }
+
+  for (unsigned int i = 1; i <= NUM_Q_VARIABLES;i++) {
 	std::ostringstream os;
-	os << "q" << i+1;
+	os << "q" << i;
 	param = Param::new_param_float ( os.str().c_str(), P_FLAG_QVAR, &this->q[i], NULL, MAX_DOUBLE_SIZE,
 		 -MAX_DOUBLE_SIZE, 0.0 );
-    if ( !ParamUtils::insert ( param, &this->param_tree ) )
+	if ( ParamUtils::insert ( param, &this->param_tree ) < 0 )
 	{
 		abort();
 	}
@@ -438,13 +440,17 @@ CustomWave::~CustomWave()
   free(a_mesh);
   free(x_mesh);
   free(y_mesh);
+  free(value1);
+  free(value2);
+  free(sample_mesh);
+
 }
 
 
 
 
 // Comments: index is not passed, so we assume monotonic increment by 1 is ok here
-int CustomWave::add_per_point_eqn(char * name, Expr * gen_expr)
+int CustomWave::add_per_point_eqn(char * name, GenExpr * gen_expr)
 {
 
   PerPointEqn * per_point_eqn;
@@ -472,10 +478,10 @@ int CustomWave::add_per_point_eqn(char * name, Expr * gen_expr)
   index = per_point_eqn_tree.size();
 
   /* Create the per point equation given the index, parameter, and general expression */
-  if ((per_point_eqn = new PerPointEqn(index, param, gen_expr)) == NULL)
+  if ((per_point_eqn = new PerPointEqn(index, param, gen_expr, samples)) == NULL)
     return PROJECTM_FAILURE;
   if (CUSTOM_WAVE_DEBUG)
-    printf("add_per_point_eqn: created new equation (index = %d) (name = \"%s\")\n", per_point_eqn->index, param->name.c_str());
+    printf("add_per_point_eqn: created new equation (index = %d) (name = \"%s\")\n", per_point_eqn->index, per_point_eqn->param->name.c_str());
 
   /* Insert the per pixel equation into the preset per pixel database */
 
@@ -499,44 +505,28 @@ void CustomWave::evalInitConds()
 
 ColoredPoint CustomWave::PerPoint(ColoredPoint p, const WaveformContext context)
 {
-    if (nullptr == per_point_program)
-    {
-        // see comment in MilkdropPreset, collect a list of assignments into one ProgramExpr
-        // which (theoretically) could be compiled together.
-        std::vector<Expr *> steps;
-        for (auto pos = per_point_eqn_tree.begin(); pos != per_point_eqn_tree.end();++pos)
-            steps.push_back((*pos)->assign_expr);
-        Expr *program_expr  = Expr::create_program_expr(steps, false);
-        Expr *jit = nullptr;
-#if HAVE_LLVM
-        char buffer[100];
-        sprintf(buffer, "wave_%d", id);
-        if (!steps.empty())
-            jit = Expr::jit(program_expr, buffer);
-#endif
-        per_point_program = jit ? jit : program_expr;
-    }
+	    r_mesh[context.sample_int] = r;
+	    g_mesh[context.sample_int] = g;
+	    b_mesh[context.sample_int] = b;
+	    a_mesh[context.sample_int] = a;
+	    x_mesh[context.sample_int] = x;
+	    y_mesh[context.sample_int] = y;
+	    sample = context.sample;
+	    sample_mesh[context.sample_int] = context.sample;
+	    v1 = context.left;
+	    v2 = context.right;
 
-    r_mesh[context.sample_int] = r;
-    g_mesh[context.sample_int] = g;
-    b_mesh[context.sample_int] = b;
-    a_mesh[context.sample_int] = a;
-    x_mesh[context.sample_int] = x;
-    y_mesh[context.sample_int] = y;
-    sample = context.sample;
-    v1 = context.left;
-    v2 = context.right;
+	for (std::vector<PerPointEqn*>::iterator pos = per_point_eqn_tree.begin(); pos != per_point_eqn_tree.end();++pos)
+	    (*pos)->evaluate(context.sample_int);
 
-    per_point_program->eval(context.sample_int, -1);
+	    p.a = a_mesh[context.sample_int];
+	    p.r = r_mesh[context.sample_int];
+	    p.g = g_mesh[context.sample_int];
+	    p.b = b_mesh[context.sample_int];
+	    p.x = x_mesh[context.sample_int];
+	    p.y = y_mesh[context.sample_int];
 
-    p.a = a_mesh[context.sample_int];
-    p.r = r_mesh[context.sample_int];
-    p.g = g_mesh[context.sample_int];
-    p.b = b_mesh[context.sample_int];
-    p.x = x_mesh[context.sample_int];
-    p.y = y_mesh[context.sample_int];
-
-    return p;
+	    return p;
 }
 
 
