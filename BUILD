@@ -10,7 +10,10 @@ cc_library(
             "**/*.cpp",
             "**/*.c",
         ],
-        exclude = ["omptl/Example.cpp"],
+        exclude = [
+            "omptl/Example.cpp",
+            "TestRunner.cpp",
+        ],
     ),
     hdrs = glob([
         "**/*.hpp",
@@ -36,6 +39,11 @@ cc_library(
         "-isystem",
         "libprojectm/Renderer/hlslparser/src",
         "-DDATADIR_PATH=\\\"./\\\"",
+        "-DLINUX",
+        "-DprojectM_FONT_TITLE=\\\"\\\"",
+        "-DprojectM_FONT_MENU=\\\"\\\"",
+        "-DCMAKE_INSTALL_PREFIX=\\\"\\\"",
+
     ],
     data = ["//tools/cc_toolchain/raspberry_pi_sysroot:everything"],
     linkstatic = 1,

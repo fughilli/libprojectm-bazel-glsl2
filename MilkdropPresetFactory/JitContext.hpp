@@ -41,8 +41,8 @@ struct JitContext
 {
     // NOTE: the module is either "owned" by module_ptr OR executionEngine
     llvm::LLVMContext &context;
-    std::unique_ptr<llvm::Module> module_ptr;
-    std::unique_ptr<llvm::legacy::FunctionPassManager> fpm;
+    std::shared_ptr<llvm::Module> module_ptr;
+    std::shared_ptr<llvm::legacy::FunctionPassManager> fpm;
     llvm::Module *module;
     llvm::IRBuilder<llvm::ConstantFolder,llvm::IRBuilderDefaultInserter> builder;
     llvm::Type *floatType;

@@ -44,10 +44,10 @@ void VideoEcho::Draw(RenderContext &context)
 				   {1, 0},
 				   {1, 1}};
 
-		float points[4][2] = {{-0.5, -0.5},
-				      {-0.5,  0.5},
-				      { 0.5,  0.5},
-				      { 0.5,  -0.5}};
+		float points[4][2] = {{-0.5f, -0.5f},
+				      {-0.5f,  0.5f},
+				      { 0.5f,  0.5f},
+				      { 0.5f,  -0.5f}};
 
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glDisableClientState(GL_COLOR_ARRAY);
@@ -62,10 +62,10 @@ void VideoEcho::Draw(RenderContext &context)
 		glMatrixMode(GL_TEXTURE);
 
 		//draw video echo
-		glColor4f(1.0, 1.0, 1.0, a * masterAlpha);
-		glTranslatef(.5, .5, 0);
-		glScalef(1.0/zoom, 1.0/zoom, 1);
-		glTranslatef(-.5, -.5, 0);
+		glColor4f(1.0f, 1.0f, 1.0f, a * masterAlpha);
+		glTranslatef(.5f, .5f, 0);
+		glScalef(1.0f/zoom, 1.0f/zoom, 1);
+		glTranslatef(-.5f, -.5f, 0);
 
 		int flipx=1, flipy=1;
 		switch (orientation)
@@ -77,10 +77,10 @@ void VideoEcho::Draw(RenderContext &context)
 			default: flipx=1;flipy=1; break;
 		}
 
-		float pointsFlip[4][2] = {{-0.5*flipx, -0.5*flipy},
-					  {-0.5*flipx,  0.5*flipy},
-					  { 0.5*flipx,  0.5*flipy},
-					  { 0.5*flipx, -0.5*flipy}};
+		float pointsFlip[4][2] = {{-0.5f*flipx, -0.5f*flipy},
+					  {-0.5f*flipx,  0.5f*flipy},
+					  { 0.5f*flipx,  0.5f*flipy},
+					  { 0.5f*flipx, -0.5f*flipy}};
 
 		glVertexPointer(2,GL_FLOAT,0,pointsFlip);
 		glDrawArrays(GL_TRIANGLE_FAN,0,4);
