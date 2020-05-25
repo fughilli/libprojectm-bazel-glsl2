@@ -22,7 +22,7 @@
     #define SHADER_VERSION  M4::GLSLGenerator::Version_300_ES
 #else
     #define GLSL_VERSION "120"
-    #define SHADER_VERSION  M4::GLSLGenerator::Version_110
+    #define SHADER_VERSION  M4::GLSLGenerator::Version_120
 #endif
 
 
