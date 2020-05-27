@@ -36,6 +36,7 @@ cc_library(
         "-isystem",
         "libprojectm/Renderer/hlslparser/src",
         "-DDATADIR_PATH=\\\"./\\\"",
+        "-DUSE_THREADS",
     ],
     data = ["//tools/cc_toolchain/raspberry_pi_sysroot:everything"],
     linkstatic = 1,
