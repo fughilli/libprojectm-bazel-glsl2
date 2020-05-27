@@ -358,7 +358,7 @@ private:
   Pipeline* currentPipe;
 
   std::string switchPreset(std::unique_ptr<Preset> & targetPreset);
-  void switchPreset(const bool hardCut);
+  std::string switchPreset(const bool hardCut);
 
 
 

@@ -777,10 +777,12 @@ void projectM::selectPreset(unsigned int index, bool hardCut)
 
 
     *m_presetPos = m_presetChooser->begin(index);
-    switchPreset(hardCut);
+    if(!switchPreset(hardCut).empty()) {
+        selectRandom(hardCut);
+    }
 }
 
-void projectM::switchPreset(const bool hardCut) {
+std::string projectM::switchPreset(const bool hardCut) {
     std::string result;
 
     if (!hardCut) {
@@ -803,6 +805,7 @@ void projectM::switchPreset(const bool hardCut) {
         errorLoadingCurrentPreset = true;
 
     }
+    return result;
 }
 
 
@@ -811,10 +814,12 @@ void projectM::selectRandom(const bool hardCut) {
     if (m_presetChooser->empty())
         return;
 
-    *m_presetPos = m_presetChooser->weightedRandom(hardCut);
-
-    switchPreset(hardCut);
-
+    for(int i = 0; i < 10; ++i) {
+        *m_presetPos = m_presetChooser->weightedRandom(hardCut);
+        if(switchPreset(hardCut).empty()) {
+            break;
+        }
+    }
 }
 
 void projectM::selectPrevious(const bool hardCut) {
@@ -825,7 +830,9 @@ void projectM::selectPrevious(const bool hardCut) {
 
     m_presetChooser->previousPreset(*m_presetPos);
 
-    switchPreset(hardCut);
+    if(!switchPreset(hardCut).empty()) {
+        selectRandom(hardCut);
+    }
 }
 
 void projectM::selectNext(const bool hardCut) {
@@ -835,7 +842,9 @@ void projectM::selectNext(const bool hardCut) {
 
     m_presetChooser->nextPreset(*m_presetPos);
 
-    switchPreset(hardCut);
+    if(!switchPreset(hardCut).empty()) {
+        selectRandom(hardCut);
+    }
 }
 
 /**
