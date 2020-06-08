@@ -2,42 +2,58 @@
 #define TextureManager_HPP
 
 #include <iostream>
-#include <string>
 #include <map>
+#include <string>
+#include <string_view>
 #include <vector>
-#include "projectM-opengl.h"
+
 #include "Texture.hpp"
+#include "absl/types/span.h"
+#include "projectM-opengl.h"
 
-
-class TextureManager
-{
-  std::string presetsURL;
-  std::map<std::string, Texture*> textures;
-  std::vector<Texture*> blurTextures;
-  Texture * mainTexture;
-
-  std::vector<std::string> random_textures;
-  void loadTextureDir(const std::string & dirname);
-  TextureSamplerDesc loadTexture(const std::string name, const std::string imageUrl);
-  void ExtractTextureSettings(const std::string qualifiedName, GLint &_wrap_mode, GLint &_filter_mode, std::string & name);
-  std::vector<std::string> extensions;
+class TextureManager {
 
 public:
-  TextureManager(std::string _presetsURL, const int texsizeX, const int texsizeY,
-                 std::string datadir = "");
+  TextureManager(std::string presets_url, int width, int height,
+                 std::string data_url);
   ~TextureManager();
 
-  void Clear();
   void Preload();
-  TextureSamplerDesc tryLoadingTexture(const std::string name);
-  TextureSamplerDesc getTexture(const std::string fullName, const GLenum defaultWrap, const GLenum defaultFilter);
-  const Texture * getMainTexture() const;
-  const std::vector<Texture *> & getBlurTextures() const;
+  void Clear();
 
-  void updateMainTexture();
+  std::shared_ptr<Texture> TryLoadTexture(std::string_view name);
+  std::shared_ptr<Texture> GetTexture(std::string name, GLenum wrap_mode,
+                                      GLenum filter_mode);
 
-  TextureSamplerDesc getRandomTextureName(std::string rand_name);
-  void clearRandomTextures();
+  std::shared_ptr<Texture> GetMainTexture();
+  void UpdateMainTexture();
+
+  absl::Span<std::shared_ptr<Texture>> GetBlurTextures();
+
+  std::shared_ptr<Texture> GetRandomTextureName(std::string random_name);
+  void ClearRandomTextures();
+
+private:
+  void LoadTextureDirectory(std::string_view directory_name);
+  std::shared_ptr<Texture> LoadTexture(std::string name,
+                                       std::string image_url);
+  void InsertNamedTexture(std::string name, Texture::ImageType image_type,
+                          GLint width, GLint height, GLint depth,
+                          bool is_user_texture, GLenum wrap_mode,
+                          GLenum filter_mode, GLenum format, GLenum type,
+                          void *data);
+  void ParseTextureSettingsFromName(std::string_view qualified_name,
+                                    GLint *wrap_mode, GLint *filter_mode,
+                                    std::string *name);
+
+  std::string presets_url_;
+  std::map<std::string, std::shared_ptr<Texture>> named_textures_;
+  std::vector<std::shared_ptr<Texture>> blur_textures_;
+  std::shared_ptr<Texture> main_texture_;
+  std::vector<std::string> random_textures_;
+  std::map<std::string, std::string> random_names_mapping_;
+  std::vector<std::string> extensions_ = {".jpg", ".dds", ".png",
+                                          ".tga", ".bmp", ".dib"};
 };
 
 #endif

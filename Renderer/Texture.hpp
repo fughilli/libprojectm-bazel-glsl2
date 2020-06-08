@@ -1,43 +1,66 @@
 #ifndef TEXTURE_HPP_
 #define TEXTURE_HPP_
 
-#include <string>
-#include <vector>
 #include "projectM-opengl.h"
+#include <map>
+#include <string>
+#include <string_view>
+#include <vector>
 
-
-class Sampler
-{
+// Wrapper for an OpenGL sampler instance.
+class Sampler {
 public:
-    GLuint samplerID;
-    GLint wrap_mode;
-    GLint filter_mode;
+  // Constructs a new sampler, initializing its wrap and filter modes to the
+  // provided values.
+  Sampler(GLint wrap_mode, GLint filter_mode);
+  ~Sampler();
 
-    Sampler(const GLint _wrap_mode, const GLint _filter_mode);
-    ~Sampler();
+  GLint GetId() const { return sampler_id_; }
+
+private:
+  GLuint sampler_id_;
+  GLint wrap_mode_;
+  GLint filter_mode_;
 };
 
-
-class Texture
-{
+class Texture {
 public:
+  enum ImageType { k2d = 0, k3d };
 
-    GLuint texID;
-    GLenum type;
+  Texture(std::string name, ImageType image_type, int width, int height,
+          int depth, bool is_user_texture);
+  Texture(std::string name, ImageType image_type, int width, int height,
+          int depth, bool is_user_texture, GLenum data_format, GLenum data_type,
+          void *data);
+  Texture(std::string name, ImageType image_type, GLuint texture_id,
+          GLenum texture_type, int width, int height, int depth,
+          bool is_user_texture);
+  ~Texture();
 
-    std::string name;
-	int width;
-	int height;
-    bool userTexture;
-    std::vector<Sampler*> samplers;
+  // Gets a sampler for this texture with the specified modes.
+  std::shared_ptr<Sampler> GetSamplerForModes(GLint wrap_mode,
+                                              GLint filter_mode);
 
-    Texture(const std::string & _name, const int _width, const int _height, const bool _userTexture);
-    Texture(const std::string & _name, const GLuint _texID, const GLenum _type, const int _width, const int _height, const bool _userTexture);
-    ~Texture();
+  std::shared_ptr<Sampler> GetFirstSampler();
 
-    Sampler *getSampler(const GLint _wrap_mode, const GLint _filter_mode);
+  bool IsUserTexture() const { return is_user_texture_; }
+  GLint GetId() const { return texture_id_; }
+  GLenum GetType() const { return texture_type_; }
+  std::string_view GetName() const { return name_; }
+  int GetWidth() const { return width_; }
+  int GetHeight() const { return height_; }
+  int GetDepth() const { return depth_; }
+
+private:
+  std::string name_;
+  ImageType image_type_;
+  GLuint texture_id_;
+  GLenum texture_type_;
+  int width_;
+  int height_;
+  int depth_;
+  bool is_user_texture_;
+  std::map<std::pair<GLint, GLint>, std::shared_ptr<Sampler>> samplers_;
 };
-
-typedef std::pair<Texture*, Sampler*>   TextureSamplerDesc;
 
 #endif /* TEXTURE_HPP_ */

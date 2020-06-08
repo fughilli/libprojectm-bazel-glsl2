@@ -346,7 +346,7 @@ void Renderer::FinishPass1()
 {
 	draw_title_to_texture();
 
-	textureManager->updateMainTexture();
+	textureManager->UpdateMainTexture();
 }
 
 void Renderer::Pass2(const Pipeline& pipeline, const PipelineContext& pipelineContext)
@@ -431,7 +431,7 @@ void Renderer::RenderFrameOnlyPass2(const Pipeline& pipeline, const PipelineCont
 void Renderer::Interpolation(const Pipeline& pipeline, const PipelineContext& pipelineContext)
 {
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textureManager->getMainTexture()->texID);
+	glBindTexture(GL_TEXTURE_2D, textureManager->GetMainTexture()->GetId());
 
 	//Texture wrapping( clamp vs. wrap)
 	if (pipeline.textureWrap == 0)
@@ -733,7 +733,7 @@ void Renderer::draw_toast()
 void Renderer::CompositeOutput(const Pipeline& pipeline, const PipelineContext& pipelineContext)
 {
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textureManager->getMainTexture()->texID);
+	glBindTexture(GL_TEXTURE_2D, textureManager->GetMainTexture()->GetId());
 
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

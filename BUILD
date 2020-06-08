@@ -39,9 +39,13 @@ cc_library(
         "-DUSE_THREADS",
     ],
     data = ["//tools/cc_toolchain/raspberry_pi_sysroot:everything"],
+    linkopts = [
+        "-lstdc++fs",
+    ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [
+        "@com_google_absl//absl/types:span",
         "@org_llvm_libcxx//:libcxx",
     ],
 )

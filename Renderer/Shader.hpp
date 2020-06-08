@@ -16,7 +16,7 @@ class Shader
 {
 public:
 
-    std::map<std::string, TextureSamplerDesc> textures;
+    std::map<std::string, std::shared_ptr<Texture>> textures;
 
     std::string programSource;
     std::string presetPath;

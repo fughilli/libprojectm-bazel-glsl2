@@ -179,12 +179,12 @@ void Shape::Draw(RenderContext &context)
 	{
 		if (imageUrl !="")
 		{
-            TextureSamplerDesc tex = context.textureManager->getTexture(imageUrl, GL_CLAMP_TO_EDGE, GL_LINEAR);
-            if (tex.first != NULL)
+            auto tex = context.textureManager->GetTexture(imageUrl, GL_CLAMP_TO_EDGE, GL_LINEAR);
+            if (tex == nullptr)
 			{
                 glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, tex.first->texID);
-                glBindSampler(0, tex.second->samplerID);
+                glBindTexture(GL_TEXTURE_2D, tex->GetId());
+                glBindSampler(0, tex->GetSamplerForModes(GL_CLAMP_TO_EDGE, GL_LINEAR)->GetId());
 
 				context.aspectRatio=1.0;
 			}

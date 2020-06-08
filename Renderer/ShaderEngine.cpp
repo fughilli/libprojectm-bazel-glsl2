@@ -179,18 +179,18 @@ GLuint ShaderEngine::compilePresetShader(const PresentShaderType shaderType, Sha
 
 
     // Add builtin textures
-    pmShader.textures["main"] = textureManager->getTexture("main", GL_REPEAT, GL_LINEAR);
-    pmShader.textures["fc_main"] = textureManager->getTexture("main", GL_CLAMP_TO_EDGE, GL_LINEAR);
-    pmShader.textures["pc_main"] = textureManager->getTexture("main", GL_CLAMP_TO_EDGE, GL_NEAREST);
-    pmShader.textures["fw_main"] = textureManager->getTexture("main", GL_REPEAT, GL_LINEAR);
-    pmShader.textures["pw_main"] = textureManager->getTexture("main", GL_REPEAT, GL_NEAREST);
+    pmShader.textures["main"] = textureManager->GetTexture("main", GL_REPEAT, GL_LINEAR);
+    pmShader.textures["fc_main"] = textureManager->GetTexture("main", GL_CLAMP_TO_EDGE, GL_LINEAR);
+    pmShader.textures["pc_main"] = textureManager->GetTexture("main", GL_CLAMP_TO_EDGE, GL_NEAREST);
+    pmShader.textures["fw_main"] = textureManager->GetTexture("main", GL_REPEAT, GL_LINEAR);
+    pmShader.textures["pw_main"] = textureManager->GetTexture("main", GL_REPEAT, GL_NEAREST);
 
-    pmShader.textures["noise_lq"] = textureManager->getTexture("noise_lq", GL_CLAMP_TO_EDGE, GL_LINEAR);
-    pmShader.textures["noise_lq_lite"] = textureManager->getTexture("noise_lq_lite", GL_CLAMP_TO_EDGE, GL_LINEAR);
-    pmShader.textures["noise_mq"] = textureManager->getTexture("noise_mq", GL_CLAMP_TO_EDGE, GL_LINEAR);
-    pmShader.textures["noise_hq"] = textureManager->getTexture("noise_hq", GL_CLAMP_TO_EDGE, GL_LINEAR);
-    pmShader.textures["noisevol_lq"] = textureManager->getTexture("noisevol_lq", GL_CLAMP_TO_EDGE, GL_LINEAR);
-    pmShader.textures["noisevol_hq"] = textureManager->getTexture("noisevol_hq", GL_CLAMP_TO_EDGE, GL_LINEAR);
+    pmShader.textures["noise_lq"] = textureManager->GetTexture("noise_lq", GL_CLAMP_TO_EDGE, GL_LINEAR);
+    pmShader.textures["noise_lq_lite"] = textureManager->GetTexture("noise_lq_lite", GL_CLAMP_TO_EDGE, GL_LINEAR);
+    pmShader.textures["noise_mq"] = textureManager->GetTexture("noise_mq", GL_CLAMP_TO_EDGE, GL_LINEAR);
+    pmShader.textures["noise_hq"] = textureManager->GetTexture("noise_hq", GL_CLAMP_TO_EDGE, GL_LINEAR);
+    pmShader.textures["noisevol_lq"] = textureManager->GetTexture("noisevol_lq", GL_CLAMP_TO_EDGE, GL_LINEAR);
+    pmShader.textures["noisevol_hq"] = textureManager->GetTexture("noisevol_hq", GL_CLAMP_TO_EDGE, GL_LINEAR);
 
 
 
@@ -208,50 +208,44 @@ GLuint ShaderEngine::compilePresetShader(const PresentShaderType shaderType, Sha
             std::string lowerCaseName(sampler);
             std::transform(lowerCaseName.begin(), lowerCaseName.end(), lowerCaseName.begin(), tolower);
 
-            TextureSamplerDesc texDesc = textureManager->getTexture(sampler, GL_REPEAT, GL_LINEAR);
+            auto texture = textureManager->GetTexture(sampler, GL_REPEAT, GL_LINEAR);
 
-            if (texDesc.first == NULL)
+            if (texture == nullptr)
             {
                 if (lowerCaseName.substr(0, 4) == "rand" || lowerCaseName.substr(2, 5) == "_rand")
                 {
-                    texDesc = textureManager->getRandomTextureName(sampler);
+                    texture = textureManager->GetRandomTextureName(sampler);
                 }
                 else
                 {
-                    texDesc = textureManager->tryLoadingTexture(sampler);
+                    texture = textureManager->TryLoadTexture(sampler);
                 }
             }
 
-            if (texDesc.first == NULL)
+            if (texture == nullptr)
             {
                 std::cerr << "Texture loading error for: " << sampler << std::endl;
             }
             else
             {
-                std::map<std::string, TextureSamplerDesc>::const_iterator iter = pmShader.textures.cbegin();
-                for ( ; iter != pmShader.textures.cend(); ++iter)
-                {
-                    if (iter->first == sampler)
-                        break;
+                if (pmShader.textures.find(sampler) == pmShader.textures.end()) {
+                    pmShader.textures[sampler] = texture;
                 }
-
-                if (iter == pmShader.textures.cend())
-                    pmShader.textures[sampler] = texDesc;
             }
         }
 
         found = program.find("sampler_", found);
     }
 
-    textureManager->clearRandomTextures();
+    textureManager->ClearRandomTextures();
 
     found = program.find("GetBlur3");
     if (found != std::string::npos)
     {
         blur1_enabled = blur2_enabled = blur3_enabled = true;
-        pmShader.textures["blur3"] = textureManager->getTexture("blur3", GL_CLAMP_TO_EDGE, GL_LINEAR);
-        pmShader.textures["blur2"] = textureManager->getTexture("blur2", GL_CLAMP_TO_EDGE, GL_LINEAR);
-        pmShader.textures["blur1"] = textureManager->getTexture("blur1", GL_CLAMP_TO_EDGE, GL_LINEAR);
+        pmShader.textures["blur3"] = textureManager->GetTexture("blur3", GL_CLAMP_TO_EDGE, GL_LINEAR);
+        pmShader.textures["blur2"] = textureManager->GetTexture("blur2", GL_CLAMP_TO_EDGE, GL_LINEAR);
+        pmShader.textures["blur1"] = textureManager->GetTexture("blur1", GL_CLAMP_TO_EDGE, GL_LINEAR);
     }
     else
     {
@@ -259,8 +253,8 @@ GLuint ShaderEngine::compilePresetShader(const PresentShaderType shaderType, Sha
         if (found != std::string::npos)
         {
             blur1_enabled = blur2_enabled = true;
-            pmShader.textures["blur2"] = textureManager->getTexture("blur2", GL_CLAMP_TO_EDGE, GL_LINEAR);
-            pmShader.textures["blur1"] = textureManager->getTexture("blur1", GL_CLAMP_TO_EDGE, GL_LINEAR);
+            pmShader.textures["blur2"] = textureManager->GetTexture("blur2", GL_CLAMP_TO_EDGE, GL_LINEAR);
+            pmShader.textures["blur1"] = textureManager->GetTexture("blur1", GL_CLAMP_TO_EDGE, GL_LINEAR);
         }
         else
         {
@@ -268,7 +262,7 @@ GLuint ShaderEngine::compilePresetShader(const PresentShaderType shaderType, Sha
             if (found != std::string::npos)
             {
                 blur1_enabled = true;
-                pmShader.textures["blur1"] = textureManager->getTexture("blur1", GL_CLAMP_TO_EDGE, GL_LINEAR);
+                pmShader.textures["blur1"] = textureManager->GetTexture("blur1", GL_CLAMP_TO_EDGE, GL_LINEAR);
             }
         }
     }
@@ -337,19 +331,18 @@ GLuint ShaderEngine::compilePresetShader(const PresentShaderType shaderType, Sha
 
     // Declare samplers
     std::set<std::string> texsizes;
-    std::map<std::string, TextureSamplerDesc>::const_iterator iter_samplers = pmShader.textures.cbegin();
-    for ( ; iter_samplers != pmShader.textures.cend(); ++iter_samplers)
+    for (auto& k_v : pmShader.textures)
     {
-        Texture * texture = iter_samplers->second.first;
+        auto texture = k_v.second;
 
-        if (texture->type == GL_TEXTURE_3D) {
-            sourcePreprocessed.insert(0, "uniform sampler3D sampler_" + iter_samplers->first + ";\n");
+        if (texture->GetType() == GL_TEXTURE_3D) {
+            sourcePreprocessed.insert(0, "uniform sampler3D sampler_" + k_v.first + ";\n");
         } else {
-            sourcePreprocessed.insert(0, "uniform sampler2D sampler_" + iter_samplers->first + ";\n");
+            sourcePreprocessed.insert(0, "uniform sampler2D sampler_" + k_v.first + ";\n");
         }
 
-        texsizes.insert(iter_samplers->first);
-        texsizes.insert(texture->name);
+        texsizes.insert(k_v.first);
+        texsizes.insert(std::string(texture->GetName()));
     }
 
     // Declare texsizes
@@ -541,16 +534,13 @@ void ShaderEngine::SetupTextures(GLuint program, const Shader &shader)
 {
 
     unsigned int texNum = 0;
-    std::map<std::string, Texture*> texsizes;
+    std::map<std::string, std::shared_ptr<Texture>> texsizes;
 
     // Set samplers
-    for (std::map<std::string, TextureSamplerDesc>::const_iterator iter_samplers = shader.textures.begin(); iter_samplers
-                    != shader.textures.end(); ++iter_samplers)
+    for (auto& k_v : shader.textures)
     {
-        std::string texName = iter_samplers->first;
-        Texture * texture = iter_samplers->second.first;
-        Sampler * sampler = iter_samplers->second.second;
-        std::string samplerName = "sampler_" + texName;
+        auto texture = k_v.second;
+        std::string samplerName = "sampler_" + k_v.first;
 
         // https://www.khronos.org/opengl/wiki/Sampler_(GLSL)#Binding_textures_to_samplers
         GLint param = glGetUniformLocation(program, samplerName.c_str());
@@ -559,12 +549,12 @@ void ShaderEngine::SetupTextures(GLuint program, const Shader &shader)
             continue;
         }
 
-        texsizes[texName] = texture;
-        texsizes[texture->name] = texture;
+        texsizes[k_v.first] = texture;
+        texsizes[std::string(texture->GetName())] = texture;
 
         glActiveTexture(GL_TEXTURE0 + texNum);
-        glBindTexture(texture->type, texture->texID);
-        glBindSampler(texNum, sampler->samplerID);
+        glBindTexture(texture->GetType(), texture->GetId());
+        glBindSampler(texNum, texture->GetFirstSampler()->GetId());
 
         glUniform1i(param, texNum);
         texNum++;
@@ -572,16 +562,14 @@ void ShaderEngine::SetupTextures(GLuint program, const Shader &shader)
 
 
     // Set texsizes
-    std::map<std::string, Texture*>::const_iterator iter_textures = texsizes.cbegin();
-    for ( ; iter_textures != texsizes.cend(); ++iter_textures)
-    {
-        Texture * texture = iter_textures->second;
+    for (auto& k_v : texsizes) {
+        auto texture = k_v.second;
 
-        std::string texsizeName = "texsize_" + iter_textures->first;
+        std::string texsizeName = (std::stringstream() << "texsize_" << k_v.first).str();
         GLint textSizeParam = glGetUniformLocation(program, texsizeName.c_str());
         if (textSizeParam >= 0) {
-            glUniform4f(textSizeParam, texture->width, texture->height,
-                            1 / (float) texture->width, 1 / (float) texture->height);
+            glUniform4f(textSizeParam, texture->GetWidth(), texture->GetHeight(),
+                            1 / (float) texture->GetWidth(), 1 / (float) texture->GetHeight());
         } else {
             // unused uniform have been optimized out by glsl compiler
             continue;
@@ -654,8 +642,8 @@ void ShaderEngine::RenderBlurTextures(const Pipeline &pipeline, const PipelineCo
     fscale[2] = 1.0f / (temp_max - temp_min);
     fbias [2] = -temp_min * fscale[2];
 
-    const std::vector<Texture*> & blurTextures = textureManager->getBlurTextures();
-    const Texture * mainTexture = textureManager->getMainTexture();
+    const auto blurTextures = textureManager->GetBlurTextures();
+    const auto mainTexture = textureManager->GetMainTexture();
 
     glBlendFunc(GL_ONE, GL_ZERO);
     glBindVertexArray(vaoBlur);
@@ -673,18 +661,18 @@ void ShaderEngine::RenderBlurTextures(const Pipeline &pipeline, const PipelineCo
 
         }
 
-        glViewport(0, 0, blurTextures[i]->width, blurTextures[i]->height);
+        glViewport(0, 0, blurTextures[i]->GetWidth(), blurTextures[i]->GetHeight());
 
         // hook up correct source texture - assume there is only one, at stage 0
         glActiveTexture(GL_TEXTURE0);
         if (i == 0) {
-            glBindTexture(GL_TEXTURE_2D, mainTexture->texID);
+            glBindTexture(GL_TEXTURE_2D, mainTexture->GetId());
         } else {
-            glBindTexture(GL_TEXTURE_2D, blurTextures[i-1]->texID);
+            glBindTexture(GL_TEXTURE_2D, blurTextures[i-1]->GetId());
         }
 
-        float srcw = (i==0) ? mainTexture->width : blurTextures[i-1]->width;
-        float srch = (i==0) ? mainTexture->height : blurTextures[i-1]->height;
+        float srcw = (i==0) ? mainTexture->GetWidth() : blurTextures[i-1]->GetWidth();
+        float srch = (i==0) ? mainTexture->GetHeight() : blurTextures[i-1]->GetHeight();
 
 
         float fscale_now = fscale[i/2];
@@ -743,8 +731,8 @@ void ShaderEngine::RenderBlurTextures(const Pipeline &pipeline, const PipelineCo
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         // save to blur texture
-        glBindTexture(GL_TEXTURE_2D, blurTextures[i]->texID);
-        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, blurTextures[i]->width, blurTextures[i]->height);
+        glBindTexture(GL_TEXTURE_2D, blurTextures[i]->GetId());
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, blurTextures[i]->GetWidth(), blurTextures[i]->GetHeight());
     }
 
     glBindVertexArray(0);

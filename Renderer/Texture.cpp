@@ -1,72 +1,68 @@
 #include "Texture.hpp"
 
-Sampler::Sampler(const GLint _wrap_mode, const GLint _filter_mode) :
-    wrap_mode(_wrap_mode),
-    filter_mode(_filter_mode)
-{
-    glGenSamplers(1, &samplerID);
-    glSamplerParameteri(samplerID, GL_TEXTURE_MIN_FILTER, _filter_mode);
-    glSamplerParameteri(samplerID, GL_TEXTURE_MAG_FILTER, _filter_mode);
-    glSamplerParameteri(samplerID, GL_TEXTURE_WRAP_S, _wrap_mode);
-    glSamplerParameteri(samplerID, GL_TEXTURE_WRAP_T, _wrap_mode);
+Sampler::Sampler(GLint wrap_mode, GLint filter_mode)
+    : wrap_mode_(wrap_mode), filter_mode_(filter_mode) {
+  glGenSamplers(1, &sampler_id_);
+  glSamplerParameteri(sampler_id_, GL_TEXTURE_MIN_FILTER, filter_mode_);
+  glSamplerParameteri(sampler_id_, GL_TEXTURE_MAG_FILTER, filter_mode_);
+  glSamplerParameteri(sampler_id_, GL_TEXTURE_WRAP_S, wrap_mode_);
+  glSamplerParameteri(sampler_id_, GL_TEXTURE_WRAP_T, wrap_mode_);
 }
 
+Sampler::~Sampler() { glDeleteSamplers(1, &sampler_id_); }
 
-Sampler::~Sampler()
-{
-    glDeleteSamplers(1, &samplerID);
+Texture::Texture(std::string name, ImageType image_type, int width, int height,
+                 int depth, bool is_user_texture)
+    : Texture(name, image_type, width, height, depth, is_user_texture, GL_RGB,
+              GL_UNSIGNED_BYTE, nullptr) {}
+
+Texture::Texture(std::string name, ImageType image_type, int width, int height,
+                 int depth, bool is_user_texture, GLenum data_format,
+                 GLenum data_type, void *data)
+    : Texture(std::move(name), image_type, 0, GL_TEXTURE_2D, width, height,
+              depth, is_user_texture) {
+  glGenTextures(1, &texture_id_);
+  glBindTexture(texture_type_, texture_id_);
+  switch (image_type) {
+  case ImageType::k2d:
+    glTexImage2D(texture_type_, 0, GL_RGB, width_, height_, 0, data_format,
+                 data_type, data);
+    break;
+  case ImageType::k3d:
+    glTexImage3D(texture_type_, 0, GL_RGB, width_, height_, depth_, 0,
+                 data_format, data_type, data);
+    break;
+  }
+  glBindTexture(texture_type_, 0);
 }
 
+Texture::Texture(std::string name, ImageType image_type, GLuint texture_id,
+                 GLenum texture_type, int width, int height, int depth,
+                 bool is_user_texture)
+    : name_(std::move(name)), image_type_(image_type), texture_id_(texture_id),
+      texture_type_(texture_type), width_(width), height_(height),
+      depth_(depth), is_user_texture_(is_user_texture) {}
 
+Texture::~Texture() { glDeleteTextures(1, &texture_id_); }
 
-Texture::Texture(const std::string &_name, const int _width, const int _height, const bool _userTexture) :
-    type(GL_TEXTURE_2D),
-    name(_name),
-    width(_width),
-    height(_height),
-    userTexture(_userTexture)
-{
-    glGenTextures(1, &texID);
-    glBindTexture(GL_TEXTURE_2D, texID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _width, _height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-Texture::Texture(const std::string &_name, const GLuint _texID, const GLenum _type, const int _width, const int _height, const bool _userTexture) :
-    texID(_texID),
-    type(_type),
-    name(_name),
-    width(_width),
-    height(_height),
-    userTexture(_userTexture)
-{
-}
-
-
-Texture::~Texture()
-{
-    glDeleteTextures(1, &texID);
-
-    for(std::vector<Sampler*>::const_iterator iter = samplers.begin(); iter != samplers.end(); iter++)
-    {
-        delete (*iter);
+std::shared_ptr<Sampler> Texture::GetSamplerForModes(GLint wrap_mode,
+                                                     GLint filter_mode) {
+  auto sampler = samplers_.find({wrap_mode, filter_mode});
+  if (sampler == samplers_.end()) {
+    auto insert_result =
+        samplers_.insert({{wrap_mode, filter_mode},
+                          std::make_shared<Sampler>(wrap_mode, filter_mode)});
+    if (!insert_result.second) {
+      return nullptr;
     }
+    return insert_result.first->second;
+  }
+  return sampler->second;
 }
 
-
-Sampler* Texture::getSampler(const GLint _wrap_mode, const GLint _filter_mode)
-{
-    for(std::vector<Sampler*>::const_iterator iter = samplers.begin(); iter != samplers.end(); iter++)
-    {
-        if ((*iter)->wrap_mode == _wrap_mode && (*iter)->filter_mode == _filter_mode)
-        {
-            return *iter;
-        }
-    }
-
-    // Sampler not found -> adding it
-    Sampler * sampler = new Sampler(_wrap_mode, _filter_mode);
-    samplers.push_back(sampler);
-
-    return sampler;
+std::shared_ptr<Sampler> Texture::GetFirstSampler() {
+  for (auto &k_v : samplers_) {
+    return k_v.second;
+  }
+  return nullptr;
 }
