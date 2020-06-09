@@ -447,7 +447,7 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
 	if (!strncmp(eqn_string, WARP_STRING, WARP_STRING_LENGTH))
 	{
 		//std::cout << "parsing warp string block\n" << std::endl;
-		parse_string_block(fs, &preset->presetOutputs().warpShader.programSource);
+		parse_string_block(fs, &preset->presetOutputs().warpShader.program_source);
 		return PROJECTM_SUCCESS;
 	}
 
@@ -456,7 +456,7 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
 	if (!strncmp(eqn_string, COMPOSITE_STRING, COMPOSITE_STRING_LENGTH))
 	{
 		//std::cout << "parsing composite string block\n" << std::endl;
-		parse_string_block(fs, &preset->presetOutputs().compositeShader.programSource);
+		parse_string_block(fs, &preset->presetOutputs().compositeShader.program_source);
 		return PROJECTM_SUCCESS;
 	}
 

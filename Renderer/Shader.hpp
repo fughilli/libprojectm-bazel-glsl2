@@ -8,20 +8,16 @@
 #ifndef SHADER_HPP_
 #define SHADER_HPP_
 
-#include <string>
-#include <map>
 #include "Texture.hpp"
+#include <map>
+#include <string>
 
-class Shader
-{
-public:
+struct Shader {
+  std::map<std::string, TextureManager::TextureAndSampler>
+      textures_and_samplers;
 
-    std::map<std::string, std::shared_ptr<Texture>> textures;
-
-    std::string programSource;
-    std::string presetPath;
-
-	Shader();
+  std::string program_source;
+  std::string preset_path;
 };
 
 #endif /* SHADER_HPP_ */

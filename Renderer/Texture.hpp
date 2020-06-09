@@ -32,9 +32,8 @@ public:
   Texture(std::string name, ImageType image_type, int width, int height,
           int depth, bool is_user_texture, GLenum data_format, GLenum data_type,
           void *data);
-  Texture(std::string name, ImageType image_type, GLuint texture_id,
-          GLenum texture_type, int width, int height, int depth,
-          bool is_user_texture);
+  Texture(std::string name, ImageType image_type, GLuint texture_id, int width,
+          int height, int depth, bool is_user_texture);
   ~Texture();
 
   // Gets a sampler for this texture with the specified modes.

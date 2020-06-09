@@ -1,7 +1,10 @@
 #ifndef Renderable_HPP
 #define Renderable_HPP
+
 #include <vector>
 #include <typeinfo>
+#include <optional>
+
 #include "TextureManager.hpp"
 #include "projectM-opengl.h"
 #include <glm/mat4x4.hpp>
@@ -89,7 +92,6 @@ public:
     float border_b; /* blue color value */
     float border_a; /* alpha color value */
 
-
     Shape();
     ~Shape();
     void InitVertexAttrib();
@@ -113,6 +115,8 @@ private:
 
     GLuint m_vboID_not_texture;
     GLuint m_vaoID_not_texture;
+
+    std::optional<TextureManager::TextureAndSampler> texture_and_sampler;
 };
 
 class Text : RenderItem

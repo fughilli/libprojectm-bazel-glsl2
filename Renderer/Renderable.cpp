@@ -157,7 +157,6 @@ void Shape::InitVertexAttrib() {
     glDisableVertexAttribArray(1);
 }
 
-
 void Shape::Draw(RenderContext &context)
 {
 
@@ -177,17 +176,16 @@ void Shape::Draw(RenderContext &context)
 
 	if ( textured)
 	{
-		if (imageUrl !="")
-		{
-            auto tex = context.textureManager->GetTexture(imageUrl, GL_CLAMP_TO_EDGE, GL_LINEAR);
-            if (tex == nullptr)
-			{
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, tex->GetId());
-                glBindSampler(0, tex->GetSamplerForModes(GL_CLAMP_TO_EDGE, GL_LINEAR)->GetId());
+        if (!texture_and_sampler.has_value() && !imageUrl.empty()) {
+            texture_and_sampler = context.textureManager->GetTextureAndSampler(imageUrl, GL_CLAMP_TO_EDGE, GL_LINEAR);
+        }
 
-				context.aspectRatio=1.0;
-			}
+        if (texture_and_sampler.has_value()) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, texture_and_sampler.value().texture->GetId());
+            glBindSampler(0, texture_and_sampler.value().sampler->GetId());
+
+			context.aspectRatio=1.0;
 		}
 
 

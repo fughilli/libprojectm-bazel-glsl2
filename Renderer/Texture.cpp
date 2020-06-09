@@ -19,8 +19,8 @@ Texture::Texture(std::string name, ImageType image_type, int width, int height,
 Texture::Texture(std::string name, ImageType image_type, int width, int height,
                  int depth, bool is_user_texture, GLenum data_format,
                  GLenum data_type, void *data)
-    : Texture(std::move(name), image_type, 0, GL_TEXTURE_2D, width, height,
-              depth, is_user_texture) {
+    : Texture(std::move(name), image_type, 0, width, height, depth,
+              is_user_texture) {
   glGenTextures(1, &texture_id_);
   glBindTexture(texture_type_, texture_id_);
   switch (image_type) {
@@ -37,11 +37,19 @@ Texture::Texture(std::string name, ImageType image_type, int width, int height,
 }
 
 Texture::Texture(std::string name, ImageType image_type, GLuint texture_id,
-                 GLenum texture_type, int width, int height, int depth,
-                 bool is_user_texture)
+                 int width, int height, int depth, bool is_user_texture)
     : name_(std::move(name)), image_type_(image_type), texture_id_(texture_id),
-      texture_type_(texture_type), width_(width), height_(height),
-      depth_(depth), is_user_texture_(is_user_texture) {}
+      width_(width), height_(height), depth_(depth),
+      is_user_texture_(is_user_texture) {
+  switch (image_type) {
+  case ImageType::k2d:
+    texture_type_ = GL_TEXTURE_2D;
+    break;
+  case ImageType::k3d:
+    texture_type_ = GL_TEXTURE_3D;
+    break;
+  }
+}
 
 Texture::~Texture() { glDeleteTextures(1, &texture_id_); }
 

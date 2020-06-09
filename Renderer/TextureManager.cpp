@@ -1,3 +1,5 @@
+#include "TextureManager.hpp"
+
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
@@ -6,25 +8,11 @@
 #include <sstream>
 #include <vector>
 
-#include "projectM-opengl.h"
-
-#include "SOIL2/SOIL2.h"
-
 #include "Common.hpp"
 #include "IdleTextures.hpp"
-#include "Texture.hpp"
-#include "TextureManager.hpp"
-/* OpenGL ES 2.0 cant handle converting textures fro GL_RGB to GL_RGBA via
-glTexImage2D http://docs.gl/es2/glTexImage2D
-
-This causes a GLError INVALID_OPERATION(0x502) whenever making a new Renderer or
-resizing it.
-
-So because of this, we switch to a PerlinNoiseWithAlpha class to generate the
-noise textures.
-*/
 #include "PerlinNoiseWithAlpha.hpp"
-#define NOISE_INTERNAL_DATA_FORMAT GL_RGBA
+#include "SOIL2/SOIL2.h"
+#include "projectM-opengl.h"
 
 namespace {
 constexpr int kNumBlurTextures = 6;
@@ -53,8 +41,8 @@ void StripExtensions(std::string_view name, absl::Span<std::string> extensions,
   }
 }
 
-std::string MakeLookupName(std::string_view name,
-                           absl::Span<std::string> extensions) {
+std::string SanitizeName(std::string_view name,
+                         absl::Span<std::string> extensions) {
   std::string return_name;
   StripExtensions(Lowercase(name), extensions, &return_name);
   return return_name;
@@ -90,7 +78,7 @@ void TextureManager::InsertNamedTexture(std::string name,
 TextureManager::TextureManager(std::string presets_url, int width, int height,
                                std::string data_url)
     : presets_url_(std::move(presets_url)) {
-  Preload();
+  LoadIdleTextures();
 
   if (data_url.empty()) {
     data_url = DATADIR_PATH;
@@ -100,7 +88,7 @@ TextureManager::TextureManager(std::string presets_url, int width, int height,
   LoadTextureDirectory(data_url + "/textures");
   LoadTextureDirectory(presets_url);
 
-  // Create main texture ans associated samplers
+  // Create main texture and associated samplers
   main_texture_ = std::make_shared<Texture>("main", Texture::ImageType::k2d,
                                             width, height, 0, false);
   main_texture_->GetSamplerForModes(GL_REPEAT, GL_LINEAR);
@@ -139,37 +127,29 @@ TextureManager::TextureManager(std::string presets_url, int width, int height,
 
   // TODO: populate these with a loop and a helper function
   InsertNamedTexture("noise_lq_lite", Texture::ImageType::k2d, 32, 32, 0, false,
-                     GL_REPEAT, GL_LINEAR, NOISE_INTERNAL_DATA_FORMAT, GL_FLOAT,
+                     GL_REPEAT, GL_LINEAR, GL_RGBA, GL_FLOAT,
                      noise->noise_lq_lite);
   InsertNamedTexture("noise_lq", Texture::ImageType::k2d, 256, 256, 0, false,
-                     GL_REPEAT, GL_LINEAR, NOISE_INTERNAL_DATA_FORMAT, GL_FLOAT,
-                     noise->noise_lq);
+                     GL_REPEAT, GL_LINEAR, GL_RGBA, GL_FLOAT, noise->noise_lq);
   InsertNamedTexture("noise_mq", Texture::ImageType::k2d, 256, 256, 0, false,
-                     GL_REPEAT, GL_LINEAR, NOISE_INTERNAL_DATA_FORMAT, GL_FLOAT,
-                     noise->noise_mq);
+                     GL_REPEAT, GL_LINEAR, GL_RGBA, GL_FLOAT, noise->noise_mq);
   InsertNamedTexture("noise_hq", Texture::ImageType::k2d, 256, 256, 0, false,
-                     GL_REPEAT, GL_LINEAR, NOISE_INTERNAL_DATA_FORMAT, GL_FLOAT,
-                     noise->noise_hq);
+                     GL_REPEAT, GL_LINEAR, GL_RGBA, GL_FLOAT, noise->noise_hq);
   InsertNamedTexture("noisevol_lq", Texture::ImageType::k3d, 32, 32, 32, false,
-                     GL_REPEAT, GL_LINEAR, NOISE_INTERNAL_DATA_FORMAT, GL_FLOAT,
-                     noise->noise_lq);
+                     GL_REPEAT, GL_LINEAR, GL_RGBA, GL_FLOAT, noise->noise_lq);
   InsertNamedTexture("noisevol_hq", Texture::ImageType::k3d, 32, 32, 32, false,
-                     GL_REPEAT, GL_LINEAR, NOISE_INTERNAL_DATA_FORMAT, GL_FLOAT,
-                     noise->noise_lq);
+                     GL_REPEAT, GL_LINEAR, GL_RGBA, GL_FLOAT, noise->noise_lq);
 }
 
-TextureManager::~TextureManager() { Clear(); }
-
-void TextureManager::Preload() {
+void TextureManager::LoadIdleTextures() {
   int width, height;
 
   unsigned int texture_id = SOIL_load_OGL_texture_from_memory(
       M_data, M_bytes, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID,
       SOIL_FLAG_POWER_OF_TWO | SOIL_FLAG_MULTIPLY_ALPHA, &width, &height);
 
-  auto texture =
-      std::make_shared<Texture>("m", Texture::ImageType::k2d, texture_id,
-                                GL_TEXTURE_2D, width, height, 0, true);
+  auto texture = std::make_shared<Texture>("m", Texture::ImageType::k2d,
+                                           texture_id, width, height, 0, true);
   texture->GetSamplerForModes(GL_CLAMP_TO_EDGE, GL_LINEAR);
   named_textures_["m"] = texture;
 
@@ -178,95 +158,94 @@ void TextureManager::Preload() {
       SOIL_FLAG_POWER_OF_TWO | SOIL_FLAG_MULTIPLY_ALPHA, &width, &height);
 
   texture = std::make_shared<Texture>("headphones", Texture::ImageType::k2d,
-                                      texture_id, GL_TEXTURE_2D, width, height,
-                                      0, true);
+                                      texture_id, width, height, 0, true);
   texture->GetSamplerForModes(GL_CLAMP_TO_EDGE, GL_LINEAR);
   named_textures_["headphones"] = texture;
 }
 
-void TextureManager::Clear() { named_textures_.clear(); }
+void TextureManager::Clear() {
+  named_textures_.clear();
+  LoadIdleTextures();
+}
 
-std::shared_ptr<Texture>
-TextureManager::GetTexture(std::string name, GLenum default_wrap_mode,
-                           GLenum default_filter_mode) {
-  auto lookup_name = MakeLookupName(name, absl::Span<std::string>(extensions_));
-  GLint wrap_mode;
-  GLint filter_mode;
-
-  std::string unqualified_lookup_name;
-
-  ParseTextureSettingsFromName(lookup_name, &wrap_mode, &filter_mode,
-                               &unqualified_lookup_name);
-
-  std::cerr << "GetTexture: " << name << " --> " << lookup_name << " --> "
-            << unqualified_lookup_name << std::endl;
-
+std::shared_ptr<Texture> TextureManager::GetTexture(std::string lookup_name) {
   if (named_textures_.find(lookup_name) == named_textures_.end()) {
-    std::cerr << "Failed to find texture" << std::endl;
+    std::cerr << "Failed to find texture: " << lookup_name << std::endl;
     return nullptr;
   }
-
-  if (lookup_name == unqualified_lookup_name) {
-    std::cerr << "Using default wrap and filter modes" << std::endl;
-    // Warp and filter mode not specified in sampler name
-    // applying default
-    wrap_mode = default_wrap_mode;
-    filter_mode = default_filter_mode;
-  }
-
-  auto return_texture = named_textures_[unqualified_lookup_name];
-  return_texture->GetSamplerForModes(wrap_mode, filter_mode);
-  return return_texture;
+  return named_textures_[lookup_name];
 }
 
-std::shared_ptr<Texture> TextureManager::TryLoadTexture(std::string_view name) {
-  auto lookup_name = MakeLookupName(name, absl::Span<std::string>(extensions_));
-  std::string unqualified_name;
-
-  std::cerr << "TryLoadTexture: " << name << " --> " << lookup_name << " --> "
-            << unqualified_name << std::endl;
-
-  for (auto &extension : extensions_) {
-    std::string texture_path =
-        presets_url_ + PATH_SEPARATOR + unqualified_name + extension;
-
-    std::shared_ptr<Texture> loaded_texture =
-        LoadTexture(lookup_name, texture_path);
-    if (loaded_texture != nullptr) {
-      return loaded_texture;
-    }
-  }
-
-  return nullptr;
-}
-
-std::shared_ptr<Texture> TextureManager::LoadTexture(std::string lookup_name,
-                                                     std::string image_url) {
-  int width, height;
-  GLint wrap_mode;
-  GLint filter_mode;
-  std::string unqualified_name;
-
-  ParseTextureSettingsFromName(lookup_name, &wrap_mode, &filter_mode,
+std::optional<TextureManager::TextureAndSampler>
+TextureManager::GetTextureAndSampler(std::string name, GLenum default_wrap_mode,
+                                     GLenum default_filter_mode) {
+  std::cerr << "GetTextureAndSampler(" << name << ", " << default_wrap_mode
+            << ", " << default_filter_mode << ")" << std::endl;
+  std::string unqualified_name = name;
+  ParseTextureSettingsFromName(name, &default_wrap_mode, &default_filter_mode,
                                &unqualified_name);
+  auto lookup_name =
+      SanitizeName(unqualified_name, absl::Span<std::string>(extensions_));
+  auto return_texture = GetTexture(lookup_name);
+  if (return_texture == nullptr) {
+    return std::nullopt;
+  }
+  auto return_sampler = return_texture->GetSamplerForModes(default_wrap_mode,
+                                                           default_filter_mode);
+  if (return_sampler == nullptr) {
+    return std::nullopt;
+  }
+  return TextureAndSampler({return_texture, return_sampler});
+}
 
-  std::cerr << "LoadTexture: " << lookup_name << ", " << wrap_mode << ", "
-            << filter_mode << " --> " << unqualified_name << std::endl;
+std::optional<TextureManager::TextureAndSampler>
+TextureManager::LoadTextureAndSampler(std::string name) {
+  ParseTextureSettingsFromName(name, nullptr, nullptr, &name);
+  std::string texture_path = presets_url_ + PATH_SEPARATOR + name;
+  return LoadTextureAndSampler(name, texture_path);
+}
 
-  unsigned int texture_id = SOIL_load_OGL_texture(
-      image_url.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID,
-      SOIL_FLAG_MULTIPLY_ALPHA, &width, &height);
+std::optional<TextureManager::TextureAndSampler>
+TextureManager::LoadTextureAndSampler(std::string name,
+                                      std::string texture_path) {
+  GLenum wrap_mode = GL_REPEAT;
+  GLenum filter_mode = GL_LINEAR;
+  std::string unqualified_name = name;
+  ParseTextureSettingsFromName(name, &wrap_mode, &filter_mode,
+                               &unqualified_name);
+  std::cerr << "LoadTexture(" << name << "): " << wrap_mode << ", "
+            << filter_mode << " --> " << texture_path << std::endl;
+  std::string sanitized_name =
+      SanitizeName(unqualified_name, absl::Span<std::string>(extensions_));
+  std::shared_ptr<Texture> texture = nullptr;
+  if (named_textures_.find(sanitized_name) != named_textures_.end()) {
+    texture = named_textures_[sanitized_name];
+  } else {
 
-  if (texture_id == 0) {
-    return nullptr;
+    int width, height;
+    unsigned int texture_id = SOIL_load_OGL_texture(
+        texture_path.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID,
+        SOIL_FLAG_MULTIPLY_ALPHA, &width, &height);
+
+    if (texture_id == 0) {
+      return std::nullopt;
+    }
+
+    texture =
+        std::make_shared<Texture>(unqualified_name, Texture::ImageType::k2d,
+                                  texture_id, width, height, 0, true);
+    named_textures_[sanitized_name] = texture;
+  }
+  if (texture == nullptr) {
+    return std::nullopt;
   }
 
-  auto new_texture = std::make_shared<Texture>(
-      unqualified_name, Texture::ImageType::k2d, texture_id, GL_TEXTURE_2D,
-      width, height, 0, true);
-  new_texture->GetSamplerForModes(wrap_mode, filter_mode);
-  named_textures_[lookup_name] = new_texture;
-  return new_texture;
+  auto sampler = texture->GetSamplerForModes(wrap_mode, filter_mode);
+  if (sampler == nullptr) {
+    return std::nullopt;
+  }
+
+  return TextureAndSampler({texture, sampler});
 }
 
 void TextureManager::LoadTextureDirectory(std::string_view directory_name) {
@@ -278,32 +257,27 @@ void TextureManager::LoadTextureDirectory(std::string_view directory_name) {
         continue;
       }
 
-      auto lookup_name =
-          MakeLookupName(file_name, absl::Span<std::string>(extensions_));
-
-      LoadTexture(
-          lookup_name,
+      LoadTextureAndSampler(
+          std::string(directory_entry.path().filename()),
           (std::stringstream() << directory_name << PATH_SEPARATOR << file_name)
               .str());
     }
   } catch (const std::filesystem::filesystem_error &error) {
+    std::cerr << "Failed to load from directory " << directory_name << ": "
+              << error.what() << std::endl;
     return;
   }
 }
 
-std::shared_ptr<Texture>
-TextureManager::GetRandomTextureName(std::string random_name) {
-  auto random_names_mapping_iter = random_names_mapping_.find(random_name);
-  if (random_names_mapping_iter != random_names_mapping_.end()) {
-    return named_textures_[random_names_mapping_iter->second];
-  }
-
-  GLint wrap_mode;
-  GLint filter_mode;
+std::optional<TextureManager::TextureAndSampler>
+TextureManager::GetRandomTextureAndSampler(std::string random_name) {
+  GLenum wrap_mode;
+  GLenum filter_mode;
   std::string unqualified_name;
 
   ParseTextureSettingsFromName(random_name, &wrap_mode, &filter_mode,
                                &unqualified_name);
+  unqualified_name = Lowercase(unqualified_name);
 
   std::vector<std::string> user_texture_names;
   size_t separator = unqualified_name.find("_");
@@ -325,72 +299,75 @@ TextureManager::GetRandomTextureName(std::string random_name) {
   if (user_texture_names.size() > 0) {
     std::string random_texture_name =
         SelectRandomly(absl::Span<std::string>(user_texture_names));
-    random_names_mapping_[random_name] = random_texture_name;
-
     auto random_texture = named_textures_[random_texture_name];
-    random_texture->GetSamplerForModes(wrap_mode, filter_mode);
-    return random_texture;
+    auto random_sampler =
+        random_texture->GetSamplerForModes(wrap_mode, filter_mode);
+    return TextureAndSampler({random_texture, random_sampler});
   }
 
-  return nullptr;
+  return std::nullopt;
 }
 
-void TextureManager::ClearRandomTextures() { random_names_mapping_.clear(); }
-
 void TextureManager::ParseTextureSettingsFromName(
-    std::string_view qualified_name, GLint *wrap_mode, GLint *filter_mode,
-    std::string *name) {
-  std::string lowercase_qualified_name;
-  std::transform(qualified_name.begin(), qualified_name.end(),
-                 lowercase_qualified_name.begin(),
-                 [](char c) { return std::tolower(c); });
+    std::string_view name, GLenum *wrap_mode, GLenum *filter_mode,
+    std::string *unqualified_name) {
 
-  GLint update_filter_mode = 0;
+  GLenum update_filter_mode = 0;
+  GLenum update_wrap_mode = 0;
   bool invalid_name = false;
 
-  switch (lowercase_qualified_name[0]) {
-  case 'f':
-    update_filter_mode = GL_LINEAR;
-    break;
-  case 'p':
-    update_filter_mode = GL_NEAREST;
-    break;
-  default:
-    std::cerr << "qualified name has invalid format specifier: "
-              << lowercase_qualified_name[0] << std::endl;
+  if (name.size() > 3) {
+    switch (name[0]) {
+    case 'f':
+    case 'F':
+      update_filter_mode = GL_LINEAR;
+      break;
+    case 'p':
+    case 'P':
+      update_filter_mode = GL_NEAREST;
+      break;
+    default:
+      std::cerr << "qualified name has invalid format specifier: " << name[0]
+                << std::endl;
+      invalid_name = true;
+      break;
+    }
+
+    switch (name[1]) {
+    case 'c':
+    case 'C':
+      update_wrap_mode = GL_CLAMP_TO_EDGE;
+      break;
+    case 'w':
+    case 'W':
+      update_wrap_mode = GL_REPEAT;
+      break;
+    default:
+      std::cerr << "qualified name has invalid wrap specifier: " << name[0]
+                << std::endl;
+      invalid_name = true;
+      break;
+    }
+
+    if (name[2] != '_') {
+      invalid_name = true;
+    }
+  } else {
     invalid_name = true;
-    break;
+  }
+
+  if (invalid_name) {
+    *unqualified_name = name;
+    return;
   }
 
   if (filter_mode != nullptr) {
     *filter_mode = update_filter_mode;
   }
-
-  GLint update_wrap_mode = 0;
-
-  switch (lowercase_qualified_name[1]) {
-  case 'c':
-    update_wrap_mode = GL_CLAMP_TO_EDGE;
-    break;
-  case 'w':
-    update_wrap_mode = GL_REPEAT;
-    break;
-  default:
-    std::cerr << "qualified name has invalid wrap specifier: "
-              << lowercase_qualified_name[0] << std::endl;
-    invalid_name = true;
-    break;
-  }
-
   if (wrap_mode != nullptr) {
     *wrap_mode = update_wrap_mode;
   }
-
-  if (invalid_name) {
-    *name = qualified_name;
-  } else {
-    *name = qualified_name.substr(3);
-  }
+  *unqualified_name = name.substr(3);
 }
 
 std::shared_ptr<Texture> TextureManager::GetMainTexture() {

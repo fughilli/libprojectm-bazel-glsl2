@@ -294,8 +294,6 @@ void Renderer::ResetTextures()
 	textureManager->Clear();
 
 	reset(vw, vh);
-
-	textureManager->Preload();
 }
 
 void Renderer::SetupPass1(const Pipeline& pipeline, const PipelineContext& pipelineContext)
