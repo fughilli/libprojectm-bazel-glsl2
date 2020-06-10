@@ -12,7 +12,6 @@
 
 #include "Renderer/BeatDetect.hpp"
 #include "Renderer/Pipeline.hpp"
-#include "Renderer/PipelineContext.hpp"
 
 class Preset {
 public:

@@ -11,6 +11,7 @@
 #include "math.h"
 #include "BeatDetect.hpp"
 #include "ShaderEngine.hpp"
+#include "StaticShaders.hpp"
 #include <glm/gtc/type_ptr.hpp>
 
 MilkdropWaveform::MilkdropWaveform(): RenderItem(),
@@ -49,7 +50,7 @@ void MilkdropWaveform::Draw(RenderContext &context)
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glUseProgram(context.programID_v2f_c4f);
+    glUseProgram(StaticShaders::Get()->program_v2f_c4f_->GetId());
 
     glm::mat4 mat_first_translation = glm::mat4(1.0);
     mat_first_translation[3][0] = -0.5;
@@ -74,7 +75,7 @@ void MilkdropWaveform::Draw(RenderContext &context)
     mat_vertex = mat_scale * mat_vertex;
     mat_vertex = mat_rotation * mat_vertex;
     mat_vertex = mat_second_translation * mat_vertex;
-    glUniformMatrix4fv(context.uniform_v2f_c4f_vertex_tranformation, 1, GL_FALSE, glm::value_ptr(mat_vertex));
+    glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(mat_vertex));
 
     if(modulateAlphaByVolume) ModulateOpacityByVolume(context);
     else temp_a = a;

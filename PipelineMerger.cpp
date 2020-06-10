@@ -5,7 +5,7 @@
 const double PipelineMerger::e(2.71828182845904523536);
 const double PipelineMerger::s(0.5);
 
-void PipelineMerger::mergePipelines(const Pipeline & a, const Pipeline & b, Pipeline & out, RenderItemMatcher::MatchResults & results, RenderItemMergeFunction & mergeFunction, float ratio)
+void PipelineMerger::mergePipelines(Pipeline & a, Pipeline & b, Pipeline & out, RenderItemMatcher::MatchResults & results, RenderItemMergeFunction & mergeFunction, float ratio)
 
 {
 
@@ -110,16 +110,10 @@ void PipelineMerger::mergePipelines(const Pipeline & a, const Pipeline & b, Pipe
 
     if(ratio < 0.5)
     {
-        out.compositeShader = a.compositeShader;
-        out.warpShader = a.warpShader;
-        out.warpShaderFilename = a.warpShaderFilename;
-        out.compositeShaderFilename = a.compositeShaderFilename;
+        out.UpdateShaders(a.GetWarpShader().second,a.GetCompositeShader().second);
     }
     else
     {
-        out.compositeShader = b.compositeShader;
-        out.warpShader = b.warpShader;
-        out.warpShaderFilename = b.warpShaderFilename;
-        out.compositeShaderFilename = b.compositeShaderFilename;
+        out.UpdateShaders(b.GetWarpShader().second,b.GetCompositeShader().second);
     }
 }

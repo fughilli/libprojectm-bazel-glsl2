@@ -7,6 +7,7 @@
 
 #include "VideoEcho.hpp"
 #include "ShaderEngine.hpp"
+#include "StaticShaders.hpp"
 #include <glm/gtc/type_ptr.hpp>
 
 VideoEcho::VideoEcho(): a(0), zoom(1), orientation(Normal)
@@ -84,10 +85,10 @@ void VideoEcho::Draw(RenderContext &context)
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glUseProgram(context.programID_v2f_c4f_t2f);
+    glUseProgram(StaticShaders::Get()->program_v2f_c4f_t2f_->GetId());
 
-    glUniformMatrix4fv(context.uniform_v2f_c4f_t2f_vertex_tranformation, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
-    glUniform1i(context.uniform_v2f_c4f_t2f_frag_texture_sampler, 0);
+    glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_t2f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
+    glUniform1i(StaticShaders::Get()->uniform_v2f_c4f_t2f_frag_texture_sampler_, 0);
 
 
     //Now Blend the Video Echo

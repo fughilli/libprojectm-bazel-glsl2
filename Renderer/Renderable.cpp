@@ -2,8 +2,8 @@
 #include "Common.hpp"
 #include "Renderable.hpp"
 #include "Texture.hpp"
+#include "StaticShaders.hpp"
 #include <math.h>
-#include "ShaderEngine.hpp"
 #include <glm/gtc/type_ptr.hpp>
 
 typedef float floatPair[2];
@@ -70,9 +70,9 @@ void DarkenCenter::Draw(RenderContext &context)
 	{
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glUseProgram(context.programID_v2f_c4f);
+    glUseProgram(StaticShaders::Get()->program_v2f_c4f_->GetId());
 
-    glUniformMatrix4fv(context.uniform_v2f_c4f_vertex_tranformation, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
+    glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
 
     glBindVertexArray(m_vaoID);
 
@@ -219,10 +219,10 @@ void Shape::Draw(RenderContext &context)
         glBufferData(GL_ARRAY_BUFFER, sizeof(struct_data)*(sides+2), NULL, GL_DYNAMIC_DRAW);
         glBufferData(GL_ARRAY_BUFFER, sizeof(struct_data)*(sides+2), buffer_data, GL_DYNAMIC_DRAW);
 
-        glUseProgram(context.programID_v2f_c4f_t2f);
+        glUseProgram(StaticShaders::Get()->program_v2f_c4f_t2f_->GetId());
 
-        glUniformMatrix4fv(context.uniform_v2f_c4f_t2f_vertex_tranformation, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
-        glUniform1i(context.uniform_v2f_c4f_t2f_frag_texture_sampler, 0);
+        glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_t2f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
+        glUniform1i(StaticShaders::Get()->uniform_v2f_c4f_t2f_frag_texture_sampler_, 0);
 
         glBindVertexArray(m_vaoID_texture);
         glDrawArrays(GL_TRIANGLE_FAN, 0, sides+2);
@@ -256,9 +256,9 @@ void Shape::Draw(RenderContext &context)
         glBufferData(GL_ARRAY_BUFFER, sizeof(struct_data)*(sides+2), NULL, GL_DYNAMIC_DRAW);
         glBufferData(GL_ARRAY_BUFFER, sizeof(struct_data)*(sides+2), buffer_data, GL_DYNAMIC_DRAW);
 
-        glUseProgram(context.programID_v2f_c4f);
+        glUseProgram(StaticShaders::Get()->program_v2f_c4f_->GetId());
 
-        glUniformMatrix4fv(context.uniform_v2f_c4f_vertex_tranformation, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
+        glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
 
         glBindVertexArray(m_vaoID_not_texture);
 	  	glDrawArrays(GL_TRIANGLE_FAN,0,sides+2);
@@ -282,9 +282,9 @@ void Shape::Draw(RenderContext &context)
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glUseProgram(context.programID_v2f_c4f);
+    glUseProgram(StaticShaders::Get()->program_v2f_c4f_->GetId());
 
-    glUniformMatrix4fv(context.uniform_v2f_c4f_vertex_tranformation, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
+    glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
 
     glVertexAttrib4f(1, border_r, border_g, border_b, border_a * masterAlpha);
 
@@ -345,9 +345,9 @@ void MotionVectors::Draw(RenderContext &context)
         delete[] points;
 
 
-		glUseProgram(context.programID_v2f_c4f);
+		glUseProgram(StaticShaders::Get()->program_v2f_c4f_->GetId());
 
-        glUniformMatrix4fv(context.uniform_v2f_c4f_vertex_tranformation, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
+        glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
 
 		#ifndef GL_TRANSITION
         if (length <= 0.0) {
@@ -357,7 +357,7 @@ void MotionVectors::Draw(RenderContext &context)
         }
         #endif
 
-        glUniform1f(context.uniform_v2f_c4f_vertex_point_size, length);
+        glUniform1f(StaticShaders::Get()->uniform_v2f_c4f_vertex_point_size_, length);
 		glVertexAttrib4f(1, r, g, b, a * masterAlpha);
 
         glBindVertexArray(m_vaoID);
@@ -404,9 +404,9 @@ void Border::Draw(RenderContext &context)
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glUseProgram(context.programID_v2f_c4f);
+    glUseProgram(StaticShaders::Get()->program_v2f_c4f_->GetId());
 
-    glUniformMatrix4fv(context.uniform_v2f_c4f_vertex_tranformation, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
+    glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
 
     glVertexAttrib4f(1, outer_r, outer_g, outer_b, outer_a * masterAlpha);
 

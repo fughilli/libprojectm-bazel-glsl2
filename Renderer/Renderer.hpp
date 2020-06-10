@@ -125,7 +125,7 @@ private:
 
   PerPixelMesh mesh;
   BeatDetect *beatDetect;
-  TextureManager *textureManager;
+  std::shared_ptr<TextureManager> texture_manager_;
   static Pipeline* currentPipe;
   TimeKeeper *timeKeeperFPS;
   TimeKeeper *timeKeeperToast;
@@ -140,7 +140,7 @@ private:
 #endif /** USE_TEXT_MENU */
   RenderContext renderContext;
   //per pixel equation variables
-  ShaderEngine shaderEngine;
+  std::shared_ptr<ShaderEngine> shaderEngine;
   std::string m_presetName;
   std::string m_datadir;
   std::string m_fps;

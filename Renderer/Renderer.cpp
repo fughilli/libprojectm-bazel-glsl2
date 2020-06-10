@@ -12,6 +12,7 @@
 #include "omptl/omptl_algorithm"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "StaticShaders.hpp"
 #include <iostream>
 #include <chrono>
 #include <ctime>
@@ -163,7 +164,7 @@ Renderer::Renderer(int width, int height, int gx, int gy, BeatDetect* _beatDetec
 	this->correction = true;
 
 	/// @bug put these on member init list
-	this->textureManager = nullptr;
+	this->texture_manager_ = nullptr;
 	this->beatDetect = _beatDetect;
 
 	textureRenderToTexture = 0;
@@ -191,13 +192,7 @@ Renderer::Renderer(int width, int height, int gx, int gy, BeatDetect* _beatDetec
 		}
 	}
 
-	renderContext.programID_v2f_c4f = shaderEngine.programID_v2f_c4f;
-	renderContext.programID_v2f_c4f_t2f = shaderEngine.programID_v2f_c4f_t2f;
-
-	renderContext.uniform_v2f_c4f_vertex_tranformation = shaderEngine.uniform_v2f_c4f_vertex_tranformation;
-	renderContext.uniform_v2f_c4f_vertex_point_size = shaderEngine.uniform_v2f_c4f_vertex_point_size;
-	renderContext.uniform_v2f_c4f_t2f_vertex_tranformation = shaderEngine.uniform_v2f_c4f_t2f_vertex_tranformation;
-	renderContext.uniform_v2f_c4f_t2f_frag_texture_sampler = shaderEngine.uniform_v2f_c4f_t2f_frag_texture_sampler;
+    shaderEngine = std::make_shared<ShaderEngine>();
 
 	// Interpolation VAO/VBO's
 	glGenBuffers(1, &m_vbo_Interpolation);
@@ -280,18 +275,14 @@ Renderer::Renderer(int width, int height, int gx, int gy, BeatDetect* _beatDetec
 std::string Renderer::SetPipeline(Pipeline& pipeline)
 {
 	currentPipe = &pipeline;
-	shaderEngine.reset();
-	if (!shaderEngine.loadPresetShaders(pipeline, m_presetName))
-	{
-		return "Shader compilation error";
-	}
+	shaderEngine->LoadPresetShadersAsync(pipeline, m_presetName);
 
 	return std::string();
 }
 
 void Renderer::ResetTextures()
 {
-	textureManager->Clear();
+	texture_manager_->Clear();
 
 	reset(vw, vh);
 }
@@ -327,7 +318,7 @@ void Renderer::RenderItems(const Pipeline& pipeline, const PipelineContext& pipe
 	renderContext.texsize = nearestPower2(std::max(texsizeX, texsizeY));
 	renderContext.aspectCorrect = correction;
 	renderContext.aspectRatio = aspect;
-	renderContext.textureManager = textureManager;
+	renderContext.textureManager = texture_manager_.get();
 	renderContext.beatDetect = beatDetect;
 
 	for (std::vector<RenderItem*>::const_iterator pos = pipeline.drawables.begin(); pos != pipeline.drawables.end(); ++
@@ -344,7 +335,7 @@ void Renderer::FinishPass1()
 {
 	draw_title_to_texture();
 
-	textureManager->UpdateMainTexture();
+	texture_manager_->UpdateMainTexture();
 }
 
 void Renderer::Pass2(const Pipeline& pipeline, const PipelineContext& pipelineContext)
@@ -363,7 +354,7 @@ void Renderer::Pass2(const Pipeline& pipeline, const PipelineContext& pipelineCo
 	else
 		glViewport(vstartx, vstarty, this->vw, this->vh);
 
-	if (shaderEngine.enableCompositeShader(currentPipe->compositeShader, pipeline, pipelineContext))
+	if (shaderEngine->enableCompositeShader(currentPipe->GetCompositeShader().second, pipeline, pipelineContext))
 	{
 		CompositeShaderOutput(pipeline, pipelineContext);
 	}
@@ -372,8 +363,6 @@ void Renderer::Pass2(const Pipeline& pipeline, const PipelineContext& pipelineCo
 		CompositeOutput(pipeline, pipelineContext);
 	}
 
-	// When console refreshes, there is a chance the preset has been changed by the user
-	refreshConsole();
 	// TODO:
 	draw_title_to_screen(false);
 	if (this->showhelp == true)
@@ -401,7 +390,7 @@ void Renderer::RenderFrame(const Pipeline& pipeline,
 
 void Renderer::RenderFrameOnlyPass1(const Pipeline& pipeline, const PipelineContext& pipelineContext)
 {
-	shaderEngine.RenderBlurTextures(pipeline, pipelineContext);
+	shaderEngine->RenderBlurTextures(pipeline, pipelineContext);
 
 	SetupPass1(pipeline, pipelineContext);
 
@@ -429,7 +418,7 @@ void Renderer::RenderFrameOnlyPass2(const Pipeline& pipeline, const PipelineCont
 void Renderer::Interpolation(const Pipeline& pipeline, const PipelineContext& pipelineContext)
 {
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textureManager->GetMainTexture()->GetId());
+	glBindTexture(GL_TEXTURE_2D, texture_manager_->GetMainTexture()->GetId());
 
 	//Texture wrapping( clamp vs. wrap)
 	if (pipeline.textureWrap == 0)
@@ -493,7 +482,7 @@ void Renderer::Interpolation(const Pipeline& pipeline, const PipelineContext& pi
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	shaderEngine.enableWarpShader(currentPipe->warpShader, pipeline, pipelineContext, renderContext.mat_ortho);
+	shaderEngine->enableWarpShader(currentPipe->GetWarpShader().second, pipeline, pipelineContext, renderContext.mat_ortho);
 
 	glVertexAttrib4f(1, 1.0, 1.0, 1.0, pipeline.screenDecay);
 
@@ -513,10 +502,6 @@ void Renderer::Interpolation(const Pipeline& pipeline, const PipelineContext& pi
 
 Renderer::~Renderer()
 {
-	if (textureManager)
-		delete (textureManager);
-
-
 	free(p);
 
 	glDeleteBuffers(1, &m_vbo_Interpolation);
@@ -560,15 +545,10 @@ void Renderer::reset(int w, int h)
 
 	InitCompositeShaderVertex();
 
-	if (textureManager != nullptr)
-	{
-		delete textureManager;
-	}
-	textureManager = new TextureManager(presetURL, texsizeX, texsizeY, m_datadir);
+	texture_manager_ = std::make_shared< TextureManager>(presetURL, texsizeX, texsizeY, m_datadir);
 
-	shaderEngine.setParams(texsizeX, texsizeY, beatDetect, textureManager);
-	shaderEngine.reset();
-	shaderEngine.loadPresetShaders(*currentPipe, m_presetName);
+	shaderEngine->setParams(texsizeX, texsizeY, beatDetect, texture_manager_);
+	shaderEngine->LoadPresetShadersAsync(*currentPipe, m_presetName);
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -731,18 +711,18 @@ void Renderer::draw_toast()
 void Renderer::CompositeOutput(const Pipeline& pipeline, const PipelineContext& pipelineContext)
 {
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textureManager->GetMainTexture()->GetId());
+	glBindTexture(GL_TEXTURE_2D, texture_manager_->GetMainTexture()->GetId());
 
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 	renderContext.mat_ortho = glm::ortho(-0.5f, 0.5f, -0.5f, 0.5f, -40.0f, 40.0f);
 
-	shaderEngine.enableCompositeShader(currentPipe->compositeShader, pipeline, pipelineContext);
+	shaderEngine->enableCompositeShader(currentPipe->GetCompositeShader().second, pipeline, pipelineContext);
 
-	glUniformMatrix4fv(shaderEngine.uniform_v2f_c4f_t2f_vertex_tranformation, 1, GL_FALSE,
+	glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_t2f_vertex_tranformation_, 1, GL_FALSE,
 	                   value_ptr(renderContext.mat_ortho));
-	glUniform1i(shaderEngine.uniform_v2f_c4f_t2f_frag_texture_sampler, 0);
+	glUniform1i(StaticShaders::Get()->uniform_v2f_c4f_t2f_frag_texture_sampler_, 0);
 
 	//Overwrite anything on the screen
 	glBlendFunc(GL_ONE, GL_ZERO);

@@ -9,6 +9,7 @@
 #include "Waveform.hpp"
 #include <algorithm>
 #include <cmath>
+#include "StaticShaders.hpp",
 #include "BeatDetect.hpp"
 #include "ShaderEngine.hpp"
 #include <glm/gtc/type_ptr.hpp>
@@ -87,9 +88,9 @@ void Waveform::Draw(RenderContext &context)
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glUseProgram(context.programID_v2f_c4f);
+    glUseProgram(StaticShaders::Get()->program_v2f_c4f_->GetId());
 
-    glUniformMatrix4fv(context.uniform_v2f_c4f_vertex_tranformation, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
+    glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
 
 	if (additive)  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 	else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -101,14 +102,14 @@ void Waveform::Draw(RenderContext &context)
 #ifndef GL_TRANSITION
 		glPointSize(context.texsize <= 512 ? 2 : 2*context.texsize/512);
 #endif
-        glUniform1f(context.uniform_v2f_c4f_vertex_point_size, context.texsize <= 512 ? 2 : 2*context.texsize/512);
+        glUniform1f(StaticShaders::Get()->uniform_v2f_c4f_vertex_point_size_, context.texsize <= 512 ? 2 : 2*context.texsize/512);
 	}
     else
     {
 #ifndef GL_TRANSITION
         glPointSize(context.texsize <= 512 ? 1 : context.texsize/512);
 #endif
-        glUniform1f(context.uniform_v2f_c4f_vertex_point_size, context.texsize <= 512 ? 1 : context.texsize/512);
+        glUniform1f(StaticShaders::Get()->uniform_v2f_c4f_vertex_point_size_, context.texsize <= 512 ? 1 : context.texsize/512);
     }
 
     glBindVertexArray(m_vaoID);

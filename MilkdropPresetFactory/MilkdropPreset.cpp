@@ -307,10 +307,10 @@ if (MILKDROP_PRESET_DEBUG)
 
   postloadInitialize();
     
-    if (!presetOutputs().compositeShader.program_source.empty())
-        pipeline().compositeShaderFilename = pathname;
-    if (!presetOutputs().warpShader.program_source.empty())
-        pipeline().warpShaderFilename = pathname;
+    if (!presetOutputs().GetCompositeShader().second.program_source.empty())
+        pipeline().GetCompositeShader().second.file_name = pathname;
+    if (!presetOutputs().GetWarpShader().second.program_source.empty())
+        pipeline().GetWarpShader().second.file_name = pathname;
 }
 
 void MilkdropPreset::initialize(std::istream & in)
@@ -460,8 +460,8 @@ void MilkdropPreset::evalPerPixelEqns()
 
 int MilkdropPreset::readIn(std::istream & fs) {
 
-  presetOutputs().compositeShader.program_source.clear();
-  presetOutputs().warpShader.program_source.clear();
+  presetOutputs().GetCompositeShader().second.program_source.clear();
+  presetOutputs().GetWarpShader().second.program_source.clear();
 
   /* Parse any comments */
   if (Parser::parse_top_comment(fs) < 0)

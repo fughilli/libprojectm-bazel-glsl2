@@ -37,7 +37,7 @@
 #ifdef WIN32
 #include <time.h>
 #endif
-#include "PipelineContext.hpp"
+#include "Pipeline.hpp"
 #include <iostream>
 #include "projectM.hpp"
 #include "BeatDetect.hpp"

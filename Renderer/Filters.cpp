@@ -9,6 +9,7 @@
 #include "projectM-opengl.h"
 #include "Filters.hpp"
 #include "ShaderEngine.hpp"
+#include "StaticShaders.hpp"
 #include <glm/gtc/type_ptr.hpp>
 
 void Brighten::InitVertexAttrib() {
@@ -26,9 +27,9 @@ void Brighten::InitVertexAttrib() {
 
 void Brighten::Draw(RenderContext &context)
 {
-    glUseProgram(context.programID_v2f_c4f);
+    glUseProgram(StaticShaders::Get()->program_v2f_c4f_->GetId());
 
-    glUniformMatrix4fv(context.uniform_v2f_c4f_vertex_tranformation, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
+    glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
 
     glBindVertexArray(m_vaoID);
 
@@ -59,9 +60,9 @@ void Darken::InitVertexAttrib() {
 
 void Darken::Draw(RenderContext &context)
 {
-    glUseProgram(context.programID_v2f_c4f);
+    glUseProgram(StaticShaders::Get()->program_v2f_c4f_->GetId());
 
-    glUniformMatrix4fv(context.uniform_v2f_c4f_vertex_tranformation, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
+    glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
 
     glVertexAttrib4f(1, 1.0, 1.0, 1.0, 1.0);
 
@@ -90,9 +91,9 @@ void Invert::InitVertexAttrib() {
 void Invert::Draw(RenderContext &context)
 {
 
-    glUseProgram(context.programID_v2f_c4f);
+    glUseProgram(StaticShaders::Get()->program_v2f_c4f_->GetId());
 
-    glUniformMatrix4fv(context.uniform_v2f_c4f_vertex_tranformation, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
+    glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
 
     glVertexAttrib4f(1, 1.0, 1.0, 1.0, 1.0);
 
@@ -120,9 +121,9 @@ void Solarize::InitVertexAttrib() {
 
 void Solarize::Draw(RenderContext &context)
 {
-    glUseProgram(context.programID_v2f_c4f);
+    glUseProgram(StaticShaders::Get()->program_v2f_c4f_->GetId());
 
-    glUniformMatrix4fv(context.uniform_v2f_c4f_vertex_tranformation, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
+    glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
 
     glVertexAttrib4f(1, 1.0, 1.0, 1.0, 1.0);
 
