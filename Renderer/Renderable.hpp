@@ -19,7 +19,7 @@ public:
 	float aspectRatio;
 	bool aspectCorrect;
 	BeatDetect *beatDetect;
-	TextureManager *textureManager;
+    std::shared_ptr<TextureManager> texture_manager_;
     glm::mat4 mat_ortho;
 
 	RenderContext();

@@ -110,10 +110,14 @@ void PipelineMerger::mergePipelines(Pipeline & a, Pipeline & b, Pipeline & out, 
 
     if(ratio < 0.5)
     {
-        out.UpdateShaders(a.GetWarpShader().second,a.GetCompositeShader().second);
+        auto warp = a.GetWarpShader().second;
+        auto composite = a.GetCompositeShader().second;
+        out.UpdateShaders(warp, composite);
     }
     else
     {
-        out.UpdateShaders(b.GetWarpShader().second,b.GetCompositeShader().second);
+        auto warp = b.GetWarpShader().second;
+        auto composite = b.GetCompositeShader().second;
+        out.UpdateShaders(warp, composite);
     }
 }

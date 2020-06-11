@@ -282,7 +282,7 @@ std::string Renderer::SetPipeline(Pipeline& pipeline)
 
 void Renderer::ResetTextures()
 {
-	texture_manager_->Clear();
+	// texture_manager_->Clear();
 
 	reset(vw, vh);
 }
@@ -318,7 +318,7 @@ void Renderer::RenderItems(const Pipeline& pipeline, const PipelineContext& pipe
 	renderContext.texsize = nearestPower2(std::max(texsizeX, texsizeY));
 	renderContext.aspectCorrect = correction;
 	renderContext.aspectRatio = aspect;
-	renderContext.textureManager = texture_manager_.get();
+	renderContext.texture_manager_ = texture_manager_;
 	renderContext.beatDetect = beatDetect;
 
 	for (std::vector<RenderItem*>::const_iterator pos = pipeline.drawables.begin(); pos != pipeline.drawables.end(); ++

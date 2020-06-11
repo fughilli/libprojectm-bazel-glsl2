@@ -1,8 +1,15 @@
 #include "Texture.hpp"
 
+#include <iostream>
+
 Sampler::Sampler(GLint wrap_mode, GLint filter_mode)
     : wrap_mode_(wrap_mode), filter_mode_(filter_mode) {
+  std::cerr << "Initializing sampler at " << std::hex
+            << reinterpret_cast<intptr_t>(this) << std::dec
+            << " with wrap mode " << wrap_mode << " and filter mode "
+            << filter_mode << std::endl;
   glGenSamplers(1, &sampler_id_);
+  std::cerr << "Sampler ID: " << sampler_id_ << std::endl;
   glSamplerParameteri(sampler_id_, GL_TEXTURE_MIN_FILTER, filter_mode_);
   glSamplerParameteri(sampler_id_, GL_TEXTURE_MAG_FILTER, filter_mode_);
   glSamplerParameteri(sampler_id_, GL_TEXTURE_WRAP_S, wrap_mode_);
@@ -66,11 +73,4 @@ std::shared_ptr<Sampler> Texture::GetSamplerForModes(GLint wrap_mode,
     return insert_result.first->second;
   }
   return sampler->second;
-}
-
-std::shared_ptr<Sampler> Texture::GetFirstSampler() {
-  for (auto &k_v : samplers_) {
-    return k_v.second;
-  }
-  return nullptr;
 }

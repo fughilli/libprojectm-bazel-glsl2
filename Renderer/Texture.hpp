@@ -40,8 +40,6 @@ public:
   std::shared_ptr<Sampler> GetSamplerForModes(GLint wrap_mode,
                                               GLint filter_mode);
 
-  std::shared_ptr<Sampler> GetFirstSampler();
-
   bool IsUserTexture() const { return is_user_texture_; }
   GLint GetId() const { return texture_id_; }
   GLenum GetType() const { return texture_type_; }

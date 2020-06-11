@@ -72,6 +72,9 @@ void TextureManager::InsertNamedTexture(std::string name,
       std::make_shared<Texture>(name.c_str(), image_type, width, height, depth,
                                 is_user_texture, format, type, data);
   texture->GetSamplerForModes(wrap_mode, filter_mode);
+  std::cerr << "Inserting texture at " << std::hex
+            << reinterpret_cast<intptr_t>(texture.get()) << std::dec
+            << " under name: " << name << std::endl;
   named_textures_.emplace(std::make_pair(name, std::move(texture)));
 }
 
@@ -173,13 +176,15 @@ std::shared_ptr<Texture> TextureManager::GetTexture(std::string lookup_name) {
     std::cerr << "Failed to find texture: " << lookup_name << std::endl;
     return nullptr;
   }
+  std::cerr << "Found texture for name: " << lookup_name << std::endl;
   return named_textures_[lookup_name];
 }
 
 std::optional<TextureManager::TextureAndSampler>
 TextureManager::GetTextureAndSampler(std::string name, GLenum default_wrap_mode,
                                      GLenum default_filter_mode) {
-  std::cerr << "GetTextureAndSampler(" << name << ", " << default_wrap_mode
+  std::cerr << std::hex << reinterpret_cast<intptr_t>(this) << std::dec
+            << "->GetTextureAndSampler(" << name << ", " << default_wrap_mode
             << ", " << default_filter_mode << ")" << std::endl;
   std::string unqualified_name = name;
   ParseTextureSettingsFromName(name, &default_wrap_mode, &default_filter_mode,
@@ -188,13 +193,17 @@ TextureManager::GetTextureAndSampler(std::string name, GLenum default_wrap_mode,
       SanitizeName(unqualified_name, absl::Span<std::string>(extensions_));
   auto return_texture = GetTexture(lookup_name);
   if (return_texture == nullptr) {
+    std::cerr << "Could not find texture for name " << lookup_name << std::endl;
     return std::nullopt;
   }
   auto return_sampler = return_texture->GetSamplerForModes(default_wrap_mode,
                                                            default_filter_mode);
   if (return_sampler == nullptr) {
+    std::cerr << "Could not find sampler for the given modes" << std::endl;
     return std::nullopt;
   }
+
+  std::cerr << "Found texture for name " << lookup_name << std::endl;
   return TextureAndSampler({return_texture, return_sampler});
 }
 

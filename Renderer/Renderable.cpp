@@ -177,7 +177,7 @@ void Shape::Draw(RenderContext &context)
 	if ( textured)
 	{
         if (!texture_and_sampler.has_value() && !imageUrl.empty()) {
-            texture_and_sampler = context.textureManager->GetTextureAndSampler(imageUrl, GL_CLAMP_TO_EDGE, GL_LINEAR);
+            texture_and_sampler = context.texture_manager_->GetTextureAndSampler(imageUrl, GL_CLAMP_TO_EDGE, GL_LINEAR);
         }
 
         if (texture_and_sampler.has_value()) {

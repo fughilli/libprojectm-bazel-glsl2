@@ -82,15 +82,18 @@ bool ApplyHlslShaderSourceTransformations(
     ShaderEngine::PresentShaderType shader_type, std::string program_source,
     std::string *out_program_source) {
   if (out_program_source == nullptr) {
+    std::cerr << "Outparameter was null" << std::endl;
     return false;
   }
   if (program_source.empty()) {
+    std::cerr << "Input program source is empty" << std::endl;
     return false;
   }
 
   size_t found = 0;
   if ((found = program_source.rfind(kProgramEndBrace.data())) ==
       std::string::npos) {
+    std::cerr << "Could not find end brace" << std::endl;
     return false;
   }
 
@@ -103,6 +106,7 @@ bool ApplyHlslShaderSourceTransformations(
   // replace shader_body with entry point function
   if ((found = program_source.find(kShaderBodyTag.data())) ==
       std::string::npos) {
+    std::cerr << "Could not find body tag" << std::endl;
     return false;
   }
 
@@ -110,8 +114,8 @@ bool ApplyHlslShaderSourceTransformations(
   program_function << "void PS(float4 _vDiffuse : COLOR, "
                    << ((shader_type ==
                         ShaderEngine::PresentShaderType::PresentWarpShader)
-                           ? "float2"
-                           : "float4")
+                           ? "float4"
+                           : "float2")
                    << " _uv : TEXCOORD0, float2 _rad_ang : TEXCOORD1, out "
                       "float4 _return_value : COLOR)\n";
   program_source.replace(int(found), kShaderBodyTag.size(),
@@ -119,6 +123,7 @@ bool ApplyHlslShaderSourceTransformations(
   // replace "{" with some variable declarations
   if ((found = program_source.find(kProgramStartBrace.data(), found)) ==
       std::string::npos) {
+    std::cerr << "Could not find start brace" << std::endl;
     return false;
   }
   program_source.replace(found, kProgramStartBrace.size(),
@@ -150,12 +155,14 @@ bool ApplyHlslShaderSourceTransformations(
 std::shared_ptr<Shader>
 TranspilePresetShader(std::shared_ptr<TextureManager> texture_manager,
                       ShaderEngine::PresentShaderType shader_type,
-                      std::string shader_filename, ShaderCache *shader) {
+                      std::string shader_filename, std::string shader_source,
+                      ShaderCache *shader) {
   ShaderCache new_shader;
   std::string transformed_hlsl_source;
-  if (!ApplyHlslShaderSourceTransformations(shader_type, shader->program_source,
+  if (!ApplyHlslShaderSourceTransformations(shader_type, shader_source,
                                             &transformed_hlsl_source)) {
-    return GL_FALSE;
+    std::cerr << "Failed to apply source transformations." << std::endl;
+    return nullptr;
   }
 
   // Add builtin textures
@@ -319,7 +326,7 @@ TranspilePresetShader(std::shared_ptr<TextureManager> texture_manager,
     out << transformed_hlsl_source;
     out.close();
 #endif
-    return GL_FALSE;
+    return nullptr;
   }
 
   // Remove previous shader declarations
@@ -375,7 +382,7 @@ TranspilePresetShader(std::shared_ptr<TextureManager> texture_manager,
     out2 << sourcePreprocessed;
     out2.close();
 #endif
-    return GL_FALSE;
+    return nullptr;
   }
 
   // generate GLSL
@@ -391,7 +398,7 @@ TranspilePresetShader(std::shared_ptr<TextureManager> texture_manager,
     out2 << sourcePreprocessed;
     out2.close();
 #endif
-    return GL_FALSE;
+    return nullptr;
   }
 
   // now we have GLSL source for the preset shader program (hopefully it's
@@ -819,26 +826,43 @@ void CompilePresetShaders(
   std::shared_ptr<Shader> new_composite_shader, new_warp_shader;
   ShaderCache new_composite_shader_cache, new_warp_shader_cache;
   // compile and link warp and composite shaders from pipeline
-  if (pipeline->GetWarpShader().second.program_source.empty()) {
-    return;
+  std::string file_name, program_source;
+
+  {
+    auto shader = pipeline->GetWarpShader();
+    file_name = shader.second.file_name;
+    program_source = shader.second.program_source;
+    if (program_source.empty()) {
+      return;
+    }
   }
 
   new_warp_shader = TranspilePresetShader(
       texture_manager, ShaderEngine::PresentShaderType::PresentWarpShader,
-      pipeline->GetWarpShader().second.file_name, &new_warp_shader_cache);
+      file_name, program_source, &new_warp_shader_cache);
   if (new_warp_shader == nullptr) {
     std::cerr << "Failed to transpile warp shader, exiting compilation!"
               << std::endl;
     return;
   }
 
-  if (pipeline->GetCompositeShader().second.program_source.empty()) {
-    return;
+  {
+    auto shader = pipeline->GetCompositeShader();
+    file_name = shader.second.file_name;
+    program_source = shader.second.program_source;
+    if (program_source.empty()) {
+      return;
+    }
   }
 
   new_composite_shader = TranspilePresetShader(
       texture_manager, ShaderEngine::PresentShaderType::PresentCompositeShader,
-      pipeline->GetCompositeShader().second.file_name, &new_composite_shader_cache);
+      file_name, program_source, &new_composite_shader_cache);
+  if (new_composite_shader == nullptr) {
+    std::cerr << "Failed to transpile composite shader, exiting compilation!"
+              << std::endl;
+    return;
+  }
 
   compile_completed_callback(new_composite_shader, new_warp_shader,
                              new_composite_shader_cache, new_warp_shader_cache);
@@ -852,7 +876,7 @@ void ShaderEngine::UpdateShaders(Pipeline *pipeline,
                                  ShaderCache warp_shader_cache) {
   std::lock_guard<std::mutex> program_reference_lock(program_reference_mutex_);
   uniform_vertex_transf_warp_shader =
-      glGetUniformLocation(warp_shader_->GetId(), "vertex_transformation");
+      glGetUniformLocation(warp_shader->GetId(), "vertex_transformation");
 
   pipeline->UpdateShaders(warp_shader_cache, composite_shader_cache);
   composite_shader_ = composite_shader;
@@ -866,13 +890,18 @@ void ShaderEngine::LoadPresetShadersAsync(Pipeline &pipeline,
               << std::endl;
   }
 
-  compile_thread_ =
-      std::thread(&CompilePresetShaders, &pipeline, texture_manager_,
-                  std::bind(&ShaderEngine::UpdateShaders, this, &pipeline,
-                            std::placeholders::_1, std::placeholders::_2,
-                            std::placeholders::_3, std::placeholders::_4));
+  CompilePresetShaders(&pipeline, texture_manager_,
+                       std::bind(&ShaderEngine::UpdateShaders, this, &pipeline,
+                                 std::placeholders::_1, std::placeholders::_2,
+                                 std::placeholders::_3, std::placeholders::_4));
 
-  compile_thread_.join();
+  // compile_thread_ =
+  //    std::thread(&CompilePresetShaders, &pipeline, texture_manager_,
+  //                std::bind(&ShaderEngine::UpdateShaders, this, &pipeline,
+  //                          std::placeholders::_1, std::placeholders::_2,
+  //                          std::placeholders::_3, std::placeholders::_4));
+
+  // compile_thread_.join();
 }
 
 void ShaderEngine::ResetPerPresetState() {
