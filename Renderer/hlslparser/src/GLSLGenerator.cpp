@@ -206,7 +206,6 @@ bool GLSLGenerator::Generate(HLSLTree* tree, Target target, Version version, con
     if (m_version == Version_120)
     {
         m_writer.WriteLine(0, "#version 120");
-        m_writer.WriteLine(0, "#extension GL_EXT_gpu_shader4 : enable");
     }
     else if (m_version == Version_140)
     {
@@ -381,9 +380,9 @@ bool GLSLGenerator::Generate(HLSLTree* tree, Target target, Version version, con
     {
         if (m_version == Version_110 || m_version == Version_120 || m_version == Version_100_ES)
         {
-            m_writer.WriteLine(0, "float %s(float x, out int ip) { ip = int(x); return x - ip; }", m_modfFunction, "modf");
+            m_writer.WriteLine(0, "float %s(float x, out int ip) { ip = int(x); return x - ip; }", m_modfFunction);
         } else {
-            m_writer.WriteLine(0, "float %s(float x, out int ip) { return modf(x, ip); }", m_modfFunction, "modf");
+            m_writer.WriteLine(0, "float %s(float x, out int ip) { return modf(x, ip); }", m_modfFunction);
         }
     }
 
@@ -693,11 +692,19 @@ void GLSLGenerator::OutputExpression(HLSLExpression* expression, const HLSLType*
 			default:
 				ASSERT(0);
 			}
-			m_writer.Write("(");
-			OutputExpression(binaryExpression->expression1, dstType1);
-			m_writer.Write("%s", op);
-			OutputExpression(binaryExpression->expression2, dstType2);
-			m_writer.Write(")");
+            if ((m_version == Version_110 || m_version == Version_120 || m_version == Version_100_ES) && binaryExpression->binaryOp == HLSLBinaryOp_Mod) {
+                m_writer.Write("(int(mod(");
+                OutputExpression(binaryExpression->expression1, dstType1);
+                m_writer.Write(",");
+                OutputExpression(binaryExpression->expression2, dstType2);
+                m_writer.Write(")))");
+            } else {
+			    m_writer.Write("(");
+			    OutputExpression(binaryExpression->expression1, dstType1);
+			    m_writer.Write("%s", op);
+			    OutputExpression(binaryExpression->expression2, dstType2);
+			    m_writer.Write(")");
+            }
 		}
     }
     else if (expression->nodeType == HLSLNodeType_ConditionalExpression)
