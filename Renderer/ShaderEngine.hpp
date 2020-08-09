@@ -21,6 +21,7 @@
 #include "TextureManager.hpp"
 #include "projectM-opengl.h"
 #include <glm/vec3.hpp>
+#include <functional>
 
 class ShaderEngine {
 public:
@@ -31,7 +32,7 @@ public:
     PresentBlur2Shader,
   };
 
-  ShaderEngine();
+  ShaderEngine(std::function<void()> activateCompileContext, std::function<void()> deactivateCompileContext);
   virtual ~ShaderEngine();
   void LoadPresetShadersAsync(Pipeline &pipeline, std::string_view preset_name);
   bool enableWarpShader(ShaderCache &shader, const Pipeline &pipeline,
@@ -77,6 +78,10 @@ private:
   std::shared_ptr<Shader> composite_shader_, warp_shader_;
 
   std::thread compile_thread_;
+  bool compile_complete_;
+  std::condition_variable compile_complete_cv_;
+
+  std::function<void()> activate_compile_context_, deactivate_compile_context_;
 };
 
 #endif /* SHADERENGINE_HPP_ */

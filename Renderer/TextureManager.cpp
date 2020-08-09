@@ -14,6 +14,8 @@
 #include "SOIL2/SOIL2.h"
 #include "projectM-opengl.h"
 
+//#define VERBOSE_LOGGING
+
 namespace {
 constexpr int kNumBlurTextures = 6;
 
@@ -72,9 +74,11 @@ void TextureManager::InsertNamedTexture(std::string name,
       std::make_shared<Texture>(name.c_str(), image_type, width, height, depth,
                                 is_user_texture, format, type, data);
   texture->GetSamplerForModes(wrap_mode, filter_mode);
+#if defined(VERBOSE_LOGGING)
   std::cerr << "Inserting texture at " << std::hex
             << reinterpret_cast<intptr_t>(texture.get()) << std::dec
             << " under name: " << name << std::endl;
+#endif
   named_textures_.emplace(std::make_pair(name, std::move(texture)));
 }
 
@@ -176,16 +180,20 @@ std::shared_ptr<Texture> TextureManager::GetTexture(std::string lookup_name) {
     std::cerr << "Failed to find texture: " << lookup_name << std::endl;
     return nullptr;
   }
+#if defined(VERBOSE_LOGGING)
   std::cerr << "Found texture for name: " << lookup_name << std::endl;
+#endif
   return named_textures_[lookup_name];
 }
 
 std::optional<TextureManager::TextureAndSampler>
 TextureManager::GetTextureAndSampler(std::string name, GLenum default_wrap_mode,
                                      GLenum default_filter_mode) {
+#if defined(VERBOSE_LOGGING)
   std::cerr << std::hex << reinterpret_cast<intptr_t>(this) << std::dec
             << "->GetTextureAndSampler(" << name << ", " << default_wrap_mode
             << ", " << default_filter_mode << ")" << std::endl;
+#endif
   std::string unqualified_name = name;
   ParseTextureSettingsFromName(name, &default_wrap_mode, &default_filter_mode,
                                &unqualified_name);
@@ -193,7 +201,7 @@ TextureManager::GetTextureAndSampler(std::string name, GLenum default_wrap_mode,
       SanitizeName(unqualified_name, absl::Span<std::string>(extensions_));
   auto return_texture = GetTexture(lookup_name);
   if (return_texture == nullptr) {
-    std::cerr << "Could not find texture for name " << lookup_name << std::endl;
+    std::cerr << "Could not find texture for name: " << lookup_name << std::endl;
     return std::nullopt;
   }
   auto return_sampler = return_texture->GetSamplerForModes(default_wrap_mode,
@@ -203,7 +211,9 @@ TextureManager::GetTextureAndSampler(std::string name, GLenum default_wrap_mode,
     return std::nullopt;
   }
 
-  std::cerr << "Found texture for name " << lookup_name << std::endl;
+#if defined(VERBOSE_LOGGING)
+  std::cerr << "Found texture for name: " << lookup_name << std::endl;
+#endif
   return TextureAndSampler({return_texture, return_sampler});
 }
 
@@ -222,8 +232,10 @@ TextureManager::LoadTextureAndSampler(std::string name,
   std::string unqualified_name = name;
   ParseTextureSettingsFromName(name, &wrap_mode, &filter_mode,
                                &unqualified_name);
+#if defined(VERBOSE_LOGGING)
   std::cerr << "LoadTexture(" << name << "): " << wrap_mode << ", "
             << filter_mode << " --> " << texture_path << std::endl;
+#endif
   std::string sanitized_name =
       SanitizeName(unqualified_name, absl::Span<std::string>(extensions_));
   std::shared_ptr<Texture> texture = nullptr;
@@ -232,9 +244,19 @@ TextureManager::LoadTextureAndSampler(std::string name,
   } else {
 
     int width, height;
-    unsigned int texture_id = SOIL_load_OGL_texture(
-        texture_path.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID,
-        SOIL_FLAG_MULTIPLY_ALPHA, &width, &height);
+    unsigned int texture_id = 0;
+    for (auto& extension : extensions_) {
+      std::string full_texture_path = texture_path + extension;
+      texture_id = SOIL_load_OGL_texture(
+          full_texture_path.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID,
+          SOIL_FLAG_MULTIPLY_ALPHA, &width, &height);
+      if (texture_id != 0) {
+        std::cerr << "Loaded texture " << name << " from "
+                  << full_texture_path << ", size = " << width << ", "
+                  << height << std::endl;
+        break;
+      }
+    }
 
     if (texture_id == 0) {
       return std::nullopt;
@@ -336,8 +358,10 @@ void TextureManager::ParseTextureSettingsFromName(
       update_filter_mode = GL_NEAREST;
       break;
     default:
+#if defined(VERBOSE_LOGGING)
       std::cerr << "qualified name has invalid format specifier: " << name[0]
                 << std::endl;
+#endif
       invalid_name = true;
       break;
     }
@@ -352,8 +376,10 @@ void TextureManager::ParseTextureSettingsFromName(
       update_wrap_mode = GL_REPEAT;
       break;
     default:
+#if defined(VERBOSE_LOGGING)
       std::cerr << "qualified name has invalid wrap specifier: " << name[0]
                 << std::endl;
+#endif
       invalid_name = true;
       break;
     }

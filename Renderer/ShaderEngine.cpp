@@ -5,23 +5,29 @@
  *      Author: pete
  */
 #include "ShaderEngine.hpp"
-#include "BeatDetect.hpp"
-#include "GLSLGenerator.h"
-#include "StaticGlShaders.h"
-#include "HLSLParser.h"
-#include "StaticShaders.hpp"
-#include "Texture.hpp"
+
 #include <algorithm>
 #include <fstream>
-#include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale, glm::perspective
+#include <glm/gtc/matrix_transform.hpp>  // glm::translate, glm::rotate, glm::scale, glm::perspective
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/mat4x4.hpp> // glm::mat4
+#include <glm/mat4x4.hpp>  // glm::mat4
 #include <regex>
 #include <set>
 
-#define FRAND ((rand() % 7381)/7380.0f)
+#include "BeatDetect.hpp"
+#include "GLSLGenerator.h"
+#include "HLSLParser.h"
+#include "StaticGlShaders.h"
+#include "StaticShaders.hpp"
+#include "Texture.hpp"
 
-ShaderEngine::ShaderEngine() {
+#define FRAND ((rand() % 7381) / 7380.0f)
+
+ShaderEngine::ShaderEngine(std::function<void()> activateCompileContext,
+                           std::function<void()> deactivateCompileContext)
+    : activate_compile_context_(activateCompileContext),
+      deactivate_compile_context_(deactivateCompileContext),
+      compile_complete_(true) {
   // TODO: This is a complete hack to get the static shaders set up before we
   // call `enable*`.
   StaticShaders::Get();
@@ -41,11 +47,11 @@ ShaderEngine::ShaderEngine() {
 
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4,
-                        (void *)0); // Positions
+                        (void *)0);  // Positions
 
   glEnableVertexAttribArray(1);
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4,
-                        (void *)(sizeof(float) * 2)); // Textures
+                        (void *)(sizeof(float) * 2));  // Textures
 
   glBindVertexArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -133,16 +139,18 @@ bool ApplyHlslShaderSourceTransformations(
   *out_program_source = StaticGlShaders::Get()->GetPresetShaderHeader();
 
   if (shader_type == ShaderEngine::PresentShaderType::PresentWarpShader) {
-    out_program_source->append("#define rad _rad_ang.x\n"
-                               "#define ang _rad_ang.y\n"
-                               "#define uv _uv.xy\n"
-                               "#define uv_orig _uv.zw\n");
+    out_program_source->append(
+        "#define rad _rad_ang.x\n"
+        "#define ang _rad_ang.y\n"
+        "#define uv _uv.xy\n"
+        "#define uv_orig _uv.zw\n");
   } else {
-    out_program_source->append("#define rad _rad_ang.x\n"
-                               "#define ang _rad_ang.y\n"
-                               "#define uv _uv.xy\n"
-                               "#define uv_orig _uv.xy\n"
-                               "#define hue_shader _vDiffuse.xyz\n");
+    out_program_source->append(
+        "#define rad _rad_ang.x\n"
+        "#define ang _rad_ang.y\n"
+        "#define uv _uv.xy\n"
+        "#define uv_orig _uv.xy\n"
+        "#define hue_shader _vDiffuse.xyz\n");
   }
 
   out_program_source->append(program_source);
@@ -152,11 +160,10 @@ bool ApplyHlslShaderSourceTransformations(
 // Transpile a user-defined HLSL shader from a preset into GLSL, and then
 // compile the GLSL into a Shader object. returns a shared pointer to a valid
 // Shader if successful.
-std::shared_ptr<Shader>
-TranspilePresetShader(std::shared_ptr<TextureManager> texture_manager,
-                      ShaderEngine::PresentShaderType shader_type,
-                      std::string shader_filename, std::string shader_source,
-                      ShaderCache *shader) {
+std::shared_ptr<Shader> TranspilePresetShader(
+    std::shared_ptr<TextureManager> texture_manager,
+    ShaderEngine::PresentShaderType shader_type, std::string shader_filename,
+    std::string shader_source, ShaderCache *shader) {
   ShaderCache new_shader;
   std::string transformed_hlsl_source;
   if (!ApplyHlslShaderSourceTransformations(shader_type, shader_source,
@@ -288,20 +295,20 @@ TranspilePresetShader(std::shared_ptr<TextureManager> texture_manager,
 
   std::string shaderTypeString;
   switch (shader_type) {
-  case ShaderEngine::PresentShaderType::PresentWarpShader:
-    shaderTypeString = "Warp";
-    break;
-  case ShaderEngine::PresentShaderType::PresentCompositeShader:
-    shaderTypeString = "Comp";
-    break;
-  case ShaderEngine::PresentShaderType::PresentBlur1Shader:
-    shaderTypeString = "Blur1";
-    break;
-  case ShaderEngine::PresentShaderType::PresentBlur2Shader:
-    shaderTypeString = "Blur2";
-    break;
-  default:
-    shaderTypeString = "Other";
+    case ShaderEngine::PresentShaderType::PresentWarpShader:
+      shaderTypeString = "Warp";
+      break;
+    case ShaderEngine::PresentShaderType::PresentCompositeShader:
+      shaderTypeString = "Comp";
+      break;
+    case ShaderEngine::PresentShaderType::PresentBlur1Shader:
+      shaderTypeString = "Blur1";
+      break;
+    case ShaderEngine::PresentShaderType::PresentBlur2Shader:
+      shaderTypeString = "Blur2";
+      break;
+    default:
+      shaderTypeString = "Other";
   }
 
   M4::GLSLGenerator generator;
@@ -348,11 +355,11 @@ TranspilePresetShader(std::shared_ptr<TextureManager> texture_manager,
     auto texture = k_v.second.texture;
 
     if (texture->GetType() == GL_TEXTURE_3D) {
-      sourcePreprocessed.insert(0, "uniform sampler3D sampler_" + k_v.first +
-                                       ";\n");
+      sourcePreprocessed.insert(
+          0, "uniform sampler3D sampler_" + k_v.first + ";\n");
     } else {
-      sourcePreprocessed.insert(0, "uniform sampler2D sampler_" + k_v.first +
-                                       ";\n");
+      sourcePreprocessed.insert(
+          0, "uniform sampler2D sampler_" + k_v.first + ";\n");
     }
 
     texsizes.insert(k_v.first);
@@ -362,8 +369,8 @@ TranspilePresetShader(std::shared_ptr<TextureManager> texture_manager,
   // Declare texsizes
   std::set<std::string>::const_iterator iter_texsizes = texsizes.cbegin();
   for (; iter_texsizes != texsizes.cend(); ++iter_texsizes) {
-    sourcePreprocessed.insert(0, "uniform float4 texsize_" + *iter_texsizes +
-                                     ";\n");
+    sourcePreprocessed.insert(
+        0, "uniform float4 texsize_" + *iter_texsizes + ";\n");
   }
 
   // transpile from HLSL (aka preset shader aka directX shader) to GLSL (aka
@@ -386,9 +393,9 @@ TranspilePresetShader(std::shared_ptr<TextureManager> texture_manager,
   }
 
   // generate GLSL
-    if (!generator.Generate(&tree, M4::GLSLGenerator::Target_FragmentShader,
-                            StaticGlShaders::Get()->GetGlslGeneratorVersion(),
-                            "PS")) {
+  if (!generator.Generate(&tree, M4::GLSLGenerator::Target_FragmentShader,
+                          StaticGlShaders::Get()->GetGlslGeneratorVersion(),
+                          "PS")) {
     std::cerr << "Failed to transpile HLSL(step3) " << shaderTypeString
               << " shader to GLSL" << std::endl;
 #if !DUMP_SHADERS_ON_ERROR
@@ -402,19 +409,19 @@ TranspilePresetShader(std::shared_ptr<TextureManager> texture_manager,
   }
 
   // now we have GLSL source for the preset shader program (hopefully it's
-  // valid!) copmile the preset shader fragment shader with the standard vertex
-  // shader and cross our fingers
+  // valid!) copmile the preset shader fragment shader with the standard
+  // vertex shader and cross our fingers
   std::shared_ptr<Shader> return_shader;
   if (shader_type == ShaderEngine::PresentShaderType::PresentWarpShader) {
     return_shader = Shader::CompileShaderProgram(
         StaticGlShaders::Get()->GetPresetWarpVertexShader(),
         generator.GetResult(),
-        shaderTypeString); // returns new program
+        shaderTypeString);  // returns new program
   } else {
     return_shader = Shader::CompileShaderProgram(
         StaticGlShaders::Get()->GetPresetCompVertexShader(),
         generator.GetResult(),
-        shaderTypeString); // returns new program
+        shaderTypeString);  // returns new program
   }
 
   if (return_shader == nullptr) {
@@ -435,7 +442,7 @@ TranspilePresetShader(std::shared_ptr<TextureManager> texture_manager,
   *shader = new_shader;
   return return_shader;
 }
-} // namespace
+}  // namespace
 
 void ShaderEngine::SetupShaderVariables(GLuint program,
                                         const Pipeline &pipeline,
@@ -607,7 +614,6 @@ void ShaderEngine::SetupShaderVariables(GLuint program,
 }
 
 void ShaderEngine::SetupTextures(GLuint program, const ShaderCache &shader) {
-
   unsigned int texNum = 0;
   std::map<std::string, std::shared_ptr<Texture>> texsizes;
 
@@ -659,7 +665,7 @@ void ShaderEngine::RenderBlurTextures(const Pipeline &pipeline,
   unsigned int passes = 6;
 
   const float w[8] = {4.0f, 3.8f, 3.5f, 2.9f,
-                      1.9f, 1.2f, 0.7f, 0.3f}; //<- user can specify these
+                      1.9f, 1.2f, 0.7f, 0.3f};  //<- user can specify these
   float edge_darken = pipeline.blur1ed;
   float blur_min[3], blur_max[3];
 
@@ -781,21 +787,22 @@ void ShaderEngine::RenderBlurTextures(const Pipeline &pipeline,
       //-------------------------------------
       // float4 _c0; // source texsize (.xy), and inverse (.zw)
       // float4 _c5; // w1,w2,d1,d2
-      // float4 _c6; // w_div, edge_darken_c1, edge_darken_c2, edge_darken_c3
+      // float4 _c6; // w_div, edge_darken_c1, edge_darken_c2,
+      // edge_darken_c3
       //-------------------------------------
       glUniform4f(StaticShaders::Get()->uniform_blur2_c0_, srcw, srch,
                   1.0f / srcw, 1.0f / srch);
       glUniform4f(StaticShaders::Get()->uniform_blur2_c5_, w1, w2, d1, d2);
       // note: only do this first time; if you do it many times,
-      // then the super-blurred levels will have big black lines along the top &
-      // left sides.
+      // then the super-blurred levels will have big black lines along the
+      // top & left sides.
       if (i == 1)
         glUniform4f(StaticShaders::Get()->uniform_blur2_c6_, w_div,
                     (1 - edge_darken), edge_darken,
-                    5.0f); // darken edges
+                    5.0f);  // darken edges
       else
         glUniform4f(StaticShaders::Get()->uniform_blur2_c6_, w_div, 1.0f, 0.0f,
-                    5.0f); // don't darken
+                    5.0f);  // don't darken
     }
 
     // draw fullscreen quad
@@ -818,9 +825,13 @@ namespace {
 
 void CompilePresetShaders(
     Pipeline *pipeline, std::shared_ptr<TextureManager> texture_manager,
+    std::function<void()> activate_compile_context,
+    std::function<void()> deactivate_compile_context,
     std::function<void(std::shared_ptr<Shader>, std::shared_ptr<Shader>,
                        ShaderCache, ShaderCache)>
         compile_completed_callback) {
+  activate_compile_context();
+
   std::cout << "Starting shader compilation" << std::endl;
 
   std::shared_ptr<Shader> new_composite_shader, new_warp_shader;
@@ -864,10 +875,19 @@ void CompilePresetShaders(
     return;
   }
 
+  GLsync fenceId = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+  GLenum result;
+  while (true) {
+    result = glClientWaitSync(fenceId, GL_SYNC_FLUSH_COMMANDS_BIT,
+                              GLuint64(5000000000));
+    if (result != GL_TIMEOUT_EXPIRED) break;
+  }
+
   compile_completed_callback(new_composite_shader, new_warp_shader,
                              new_composite_shader_cache, new_warp_shader_cache);
+  deactivate_compile_context();
 }
-} // namespace
+}  // namespace
 
 void ShaderEngine::UpdateShaders(Pipeline *pipeline,
                                  std::shared_ptr<Shader> composite_shader,
@@ -881,27 +901,44 @@ void ShaderEngine::UpdateShaders(Pipeline *pipeline,
   pipeline->UpdateShaders(warp_shader_cache, composite_shader_cache);
   composite_shader_ = composite_shader;
   warp_shader_ = warp_shader;
+  compile_complete_ = true;
+  compile_complete_cv_.notify_one();
 }
 
 void ShaderEngine::LoadPresetShadersAsync(Pipeline &pipeline,
                                           std::string_view preset_name) {
-  if (compile_thread_.joinable()) {
-    std::cerr << "Compile thread from previous preset has not completed!"
-              << std::endl;
+  {
+    std::unique_lock<std::mutex> program_reference_lock(
+        program_reference_mutex_);
+    if (compile_complete_) {
+      if (compile_thread_.joinable()) {
+        compile_thread_.join();
+      }
+    } else {
+      std::cerr << "Compile thread from previous preset has not completed!"
+                << std::endl;
+      compile_complete_cv_.wait(program_reference_lock);
+      compile_complete_ = false;
+      if (compile_thread_.joinable()) {
+        compile_thread_.join();
+      }
+    }
   }
 
-  CompilePresetShaders(&pipeline, texture_manager_,
-                       std::bind(&ShaderEngine::UpdateShaders, this, &pipeline,
-                                 std::placeholders::_1, std::placeholders::_2,
-                                 std::placeholders::_3, std::placeholders::_4));
+  // CompilePresetShaders(&pipeline, texture_manager_,
+  //                     std::bind(&ShaderEngine::UpdateShaders, this,
+  //                     &pipeline,
+  //                               std::placeholders::_1,
+  //                               std::placeholders::_2,
+  //                               std::placeholders::_3,
+  //                               std::placeholders::_4));
 
-  // compile_thread_ =
-  //    std::thread(&CompilePresetShaders, &pipeline, texture_manager_,
-  //                std::bind(&ShaderEngine::UpdateShaders, this, &pipeline,
-  //                          std::placeholders::_1, std::placeholders::_2,
-  //                          std::placeholders::_3, std::placeholders::_4));
-
-  // compile_thread_.join();
+  compile_thread_ =
+      std::thread(&CompilePresetShaders, &pipeline, texture_manager_,
+                  activate_compile_context_, deactivate_compile_context_,
+                  std::bind(&ShaderEngine::UpdateShaders, this, &pipeline,
+                            std::placeholders::_1, std::placeholders::_2,
+                            std::placeholders::_3, std::placeholders::_4));
 }
 
 void ShaderEngine::ResetPerPresetState() {

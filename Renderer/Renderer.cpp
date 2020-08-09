@@ -134,7 +134,7 @@ void Renderer::drawText(GLTtext* text, const char* string, GLfloat x, GLfloat y,
 #endif /** USE_TEXT_MENU */
 
 Renderer::Renderer(int width, int height, int gx, int gy, BeatDetect* _beatDetect, std::string _presetURL,
-                   std::string _titlefontURL, std::string _menufontURL, const std::string& datadir) :
+                   std::string _titlefontURL, std::string _menufontURL, const std::string& datadir, std::function<void()> activateCompileContext, std::function<void()> deactivateCompileContext) :
 	mesh(gx, gy), m_presetName("None"), m_datadir(datadir), vw(width), vh(height),
 	title_fontURL(_titlefontURL), menu_fontURL(_menufontURL), presetURL(_presetURL)
 {
@@ -192,7 +192,7 @@ Renderer::Renderer(int width, int height, int gx, int gy, BeatDetect* _beatDetec
 		}
 	}
 
-    shaderEngine = std::make_shared<ShaderEngine>();
+    shaderEngine = std::make_shared<ShaderEngine>(activateCompileContext, deactivateCompileContext);
 
 	// Interpolation VAO/VBO's
 	glGenBuffers(1, &m_vbo_Interpolation);
@@ -354,16 +354,20 @@ void Renderer::Pass2(const Pipeline& pipeline, const PipelineContext& pipelineCo
 	else
 		glViewport(vstartx, vstarty, this->vw, this->vh);
 
-	if (shaderEngine->enableCompositeShader(currentPipe->GetCompositeShader().second, pipeline, pipelineContext))
-	{
-		CompositeShaderOutput(pipeline, pipelineContext);
-	}
-	else
-	{
-		CompositeOutput(pipeline, pipelineContext);
-	}
+    bool success = false;
+    {
+        auto locked_composite_shader = currentPipe->GetCompositeShader();
+        success = shaderEngine->enableCompositeShader(
+                locked_composite_shader.second, pipeline,
+                pipelineContext);
+    }
+    if (success) {
+        CompositeShaderOutput(pipeline, pipelineContext);
+    } else {
+        CompositeOutput(pipeline, pipelineContext);
+    }
 
-	// TODO:
+        // TODO:
 	draw_title_to_screen(false);
 	if (this->showhelp == true)
 		draw_help();
@@ -482,9 +486,14 @@ void Renderer::Interpolation(const Pipeline& pipeline, const PipelineContext& pi
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	shaderEngine->enableWarpShader(currentPipe->GetWarpShader().second, pipeline, pipelineContext, renderContext.mat_ortho);
+    {
+        auto locked_warp_shader = currentPipe->GetWarpShader();
+        shaderEngine->enableWarpShader(locked_warp_shader.second, pipeline,
+                                       pipelineContext,
+                                       renderContext.mat_ortho);
+    }
 
-	glVertexAttrib4f(1, 1.0, 1.0, 1.0, pipeline.screenDecay);
+    glVertexAttrib4f(1, 1.0, 1.0, 1.0, pipeline.screenDecay);
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ZERO);
 
@@ -718,7 +727,11 @@ void Renderer::CompositeOutput(const Pipeline& pipeline, const PipelineContext& 
 
 	renderContext.mat_ortho = glm::ortho(-0.5f, 0.5f, -0.5f, 0.5f, -40.0f, 40.0f);
 
-	shaderEngine->enableCompositeShader(currentPipe->GetCompositeShader().second, pipeline, pipelineContext);
+    {
+        auto locked_composite_shader = currentPipe->GetCompositeShader();
+        shaderEngine->enableCompositeShader(locked_composite_shader.second,
+                                            pipeline, pipelineContext);
+    }
 
 	glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_t2f_vertex_tranformation_, 1, GL_FALSE,
 	                   value_ptr(renderContext.mat_ortho));

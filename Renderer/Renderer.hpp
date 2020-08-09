@@ -13,6 +13,7 @@
 #include <iostream>
 #include <chrono>
 #include <ctime>
+#include <functional>
 
 using namespace std::chrono;
 
@@ -79,7 +80,7 @@ public:
   float m_fInvAspectX;
   float m_fInvAspectY;
 
-  Renderer(int width, int height, int gx, int gy, BeatDetect *_beatDetect, std::string presetURL, std::string title_fontURL, std::string menu_fontURL, const std::string& datadir = "");
+  Renderer(int width, int height, int gx, int gy, BeatDetect *_beatDetect, std::string presetURL, std::string title_fontURL, std::string menu_fontURL, const std::string& datadir,std::function<void()> activateCompileContext, std::function<void()> deactivateCompileContext);
   ~Renderer();
 
   void RenderFrame(const Pipeline &pipeline, const PipelineContext &pipelineContext);

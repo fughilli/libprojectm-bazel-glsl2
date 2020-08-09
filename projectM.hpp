@@ -91,6 +91,8 @@ class MasterRenderItemMerge;
 #define inline
 #endif
 
+#include <functional>
+
 /** KEEP THIS UP TO DATE! */
 #define PROJECTM_VERSION "2.0.00"
 #define PROJECTM_TITLE "projectM 2.0.00"
@@ -142,6 +144,8 @@ public:
         float easterEgg;
         bool shuffleEnabled;
         bool softCutRatingsEnabled;
+        std::function<void()> activateCompileContext;
+        std::function<void()> deactivateCompileContext;
 
         Settings() :
             meshX(32),
@@ -317,7 +321,6 @@ private:
   float fpsstart;
 
   void readConfig(const std::string &configFile);
-  void readSettings(const Settings &settings);
   void projectM_init(int gx, int gy, int fps, int texsize, int width, int height);
   void projectM_reset();
 

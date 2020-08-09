@@ -121,9 +121,10 @@ projectM::projectM ( std::string config_file, int flags) :
 
 projectM::projectM(Settings settings, int flags):
         _pcm(0), beatDetect ( 0 ), renderer ( 0 ), _pipelineContext(new PipelineContext()), _pipelineContext2(new PipelineContext()), m_presetPos(0),
-        timeKeeper(NULL), m_flags(flags), _matcher(NULL), _merger(NULL)
+        timeKeeper(NULL), m_flags(flags), _matcher(NULL), _merger(NULL), _settings(settings)
 {
-    readSettings(settings);
+    projectM_init ( _settings.meshX, _settings.meshY, _settings.fps,
+                    _settings.textureSize, _settings.windowWidth,_settings.windowHeight);
     projectM_reset();
     projectM_resetGL(_settings.windowWidth, _settings.windowHeight);
 }
@@ -242,40 +243,6 @@ void projectM::readConfig (const std::string & configFile )
     }
 
 
-}
-
-
-void projectM::readSettings (const Settings & settings )
-{
-    _settings.meshX = settings.meshX;
-    _settings.meshY = settings.meshY;
-    _settings.textureSize = settings.textureSize;
-    _settings.fps = settings.fps;
-    _settings.windowWidth  = settings.windowWidth;
-    _settings.windowHeight = settings.windowHeight;
-    _settings.smoothPresetDuration = settings.smoothPresetDuration;
-    _settings.presetDuration = settings.presetDuration;
-    _settings.softCutRatingsEnabled = settings.softCutRatingsEnabled;
-
-    _settings.presetURL = settings.presetURL;
-    _settings.titleFontURL = settings.titleFontURL;
-    _settings.menuFontURL =  settings.menuFontURL;
-    _settings.shuffleEnabled = settings.shuffleEnabled;
-    _settings.datadir = settings.datadir;
-
-    _settings.easterEgg = settings.easterEgg;
-
-    _settings.hardcutEnabled = settings.hardcutEnabled;
-    _settings.hardcutDuration = settings.hardcutDuration;
-    _settings.hardcutSensitivity = settings.hardcutSensitivity;
-    
-    _settings.beatSensitivity = settings.beatSensitivity;
-    
-    projectM_init ( _settings.meshX, _settings.meshY, _settings.fps,
-                    _settings.textureSize, _settings.windowWidth,_settings.windowHeight);
-    
-
-    _settings.aspectCorrection = settings.aspectCorrection;
 }
 
 #ifdef USE_THREADS
@@ -561,7 +528,7 @@ void projectM::projectM_init ( int gx, int gy, int fps, int texsize, int width, 
         mspf= ( int ) ( 1000.0/ ( float ) _settings.fps );
     else mspf = 0;
 
-    this->renderer = new Renderer ( width, height, gx, gy, beatDetect, settings().presetURL, settings().titleFontURL, settings().menuFontURL, settings().datadir );
+    this->renderer = new Renderer ( width, height, gx, gy, beatDetect, settings().presetURL, settings().titleFontURL, settings().menuFontURL, settings().datadir , settings().activateCompileContext, settings().deactivateCompileContext);
 
     initPresetTools(gx, gy);
 
@@ -995,7 +962,7 @@ void projectM::changeTextureSize(int size) {
                             _settings.meshX, _settings.meshY,
                             beatDetect, _settings.presetURL,
                             _settings.titleFontURL, _settings.menuFontURL,
-                            _settings.datadir);
+                            _settings.datadir, _settings.activateCompileContext, _settings.deactivateCompileContext);
 }
 void projectM::changeHardcutDuration(int seconds) {
     timeKeeper->ChangeHardcutDuration(seconds);
