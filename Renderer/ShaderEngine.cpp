@@ -23,6 +23,8 @@
 
 #define FRAND ((rand() % 7381) / 7380.0f)
 
+constexpr GLuint kDefaultNoiseTextureSamplingMode = GL_REPEAT;
+
 ShaderEngine::ShaderEngine(std::function<void()> activateCompileContext,
                            std::function<void()> deactivateCompileContext)
     : activate_compile_context_(activateCompileContext),
@@ -194,27 +196,27 @@ std::shared_ptr<Shader> TranspilePresetShader(
 
   new_shader.textures_and_samplers["noise_lq"] =
       texture_manager
-          ->GetTextureAndSampler("noise_lq", GL_CLAMP_TO_EDGE, GL_LINEAR)
+          ->GetTextureAndSampler("noise_lq", kDefaultNoiseTextureSamplingMode, GL_LINEAR)
           .value();
   new_shader.textures_and_samplers["noise_lq_lite"] =
       texture_manager
-          ->GetTextureAndSampler("noise_lq_lite", GL_CLAMP_TO_EDGE, GL_LINEAR)
+          ->GetTextureAndSampler("noise_lq_lite", kDefaultNoiseTextureSamplingMode, GL_LINEAR)
           .value();
   new_shader.textures_and_samplers["noise_mq"] =
       texture_manager
-          ->GetTextureAndSampler("noise_mq", GL_CLAMP_TO_EDGE, GL_LINEAR)
+          ->GetTextureAndSampler("noise_mq", kDefaultNoiseTextureSamplingMode, GL_LINEAR)
           .value();
   new_shader.textures_and_samplers["noise_hq"] =
       texture_manager
-          ->GetTextureAndSampler("noise_hq", GL_CLAMP_TO_EDGE, GL_LINEAR)
+          ->GetTextureAndSampler("noise_hq", kDefaultNoiseTextureSamplingMode, GL_LINEAR)
           .value();
   new_shader.textures_and_samplers["noisevol_lq"] =
       texture_manager
-          ->GetTextureAndSampler("noisevol_lq", GL_CLAMP_TO_EDGE, GL_LINEAR)
+          ->GetTextureAndSampler("noisevol_lq", kDefaultNoiseTextureSamplingMode, GL_LINEAR)
           .value();
   new_shader.textures_and_samplers["noisevol_hq"] =
       texture_manager
-          ->GetTextureAndSampler("noisevol_hq", GL_CLAMP_TO_EDGE, GL_LINEAR)
+          ->GetTextureAndSampler("noisevol_hq", kDefaultNoiseTextureSamplingMode, GL_LINEAR)
           .value();
 
   // set up texture samplers for all samplers references in the shader program
