@@ -378,12 +378,7 @@ bool GLSLGenerator::Generate(HLSLTree* tree, Target target, Version version, con
 
     if (m_tree->NeedsFunction("modf"))
     {
-        if (m_version == Version_110 || m_version == Version_120 || m_version == Version_100_ES)
-        {
-            m_writer.WriteLine(0, "float %s(float x, out int ip) { ip = int(x); return x - ip; }", m_modfFunction);
-        } else {
-            m_writer.WriteLine(0, "float %s(float x, out int ip) { return modf(x, ip); }", m_modfFunction);
-        }
+        m_writer.WriteLine(0, "float %s(float x, out int ip) { ip = int(x); return x - ip; }", m_modfFunction);
     }
 
     m_writer.WriteLine(0, "vec2  %s(float x) { return  vec2(x, x); }", m_scalarSwizzle2Function);
