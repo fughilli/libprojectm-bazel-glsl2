@@ -136,22 +136,44 @@ TextureManager::TextureManager(std::string presets_url, int width, int height,
     blur_textures_.push_back(blur_texture);
   }
 
-  auto noise = std::make_unique<PerlinNoiseWithAlpha>();
+  constexpr int kNoiseTexSize = 256;
+  constexpr int kNoiseTexSizeSmall = 32;
 
+  auto noise_lq_lite =
+      Image<float>::Create(kNoiseTexSizeSmall, kNoiseTexSizeSmall, 4);
+  FillPerlinScaled(4, 16, noise_lq_lite.get());
+  auto noise_lq = Image<float>::Create(kNoiseTexSize, kNoiseTexSize, 4);
+  FillPerlin(noise_lq.get());
+  auto noise_mq = Image<float>::Create(kNoiseTexSize, kNoiseTexSize, 4);
+  FillPerlinScaled(0.5f, 0.5f, noise_mq.get());
+  auto noise_hq = Image<float>::Create(kNoiseTexSize, kNoiseTexSize, 4);
+  FillPerlinScaled(1 / 3.0f, 1 / 3.0f, noise_hq.get());
+  auto noisevol_lq = Image<float>::Create(
+      kNoiseTexSizeSmall, kNoiseTexSizeSmall, kNoiseTexSizeSmall, 4);
+  FillPerlin(noisevol_lq.get());
+  auto noisevol_hq = Image<float>::Create(
+      kNoiseTexSizeSmall, kNoiseTexSizeSmall, kNoiseTexSizeSmall, 4);
+  FillPerlin(noisevol_hq.get());
   // TODO: populate these with a loop and a helper function
-  InsertNamedTexture("noise_lq_lite", Texture::ImageType::k2d, 32, 32, 0, false,
+  InsertNamedTexture("noise_lq_lite", Texture::ImageType::k2d,
+                     kNoiseTexSizeSmall, kNoiseTexSizeSmall, 0, false,
                      GL_REPEAT, GL_LINEAR, GL_RGBA, GL_FLOAT,
-                     noise->noise_lq_lite);
-  InsertNamedTexture("noise_lq", Texture::ImageType::k2d, 256, 256, 0, false,
-                     GL_REPEAT, GL_LINEAR, GL_RGBA, GL_FLOAT, noise->noise_lq);
-  InsertNamedTexture("noise_mq", Texture::ImageType::k2d, 256, 256, 0, false,
-                     GL_REPEAT, GL_LINEAR, GL_RGBA, GL_FLOAT, noise->noise_mq);
-  InsertNamedTexture("noise_hq", Texture::ImageType::k2d, 256, 256, 0, false,
-                     GL_REPEAT, GL_LINEAR, GL_RGBA, GL_FLOAT, noise->noise_hq);
-  InsertNamedTexture("noisevol_lq", Texture::ImageType::k3d, 32, 32, 32, false,
-                     GL_REPEAT, GL_LINEAR, GL_RGBA, GL_FLOAT, noise->noise_lq);
-  InsertNamedTexture("noisevol_hq", Texture::ImageType::k3d, 32, 32, 32, false,
-                     GL_REPEAT, GL_LINEAR, GL_RGBA, GL_FLOAT, noise->noise_lq);
+                     noise_lq_lite->data());
+  InsertNamedTexture("noise_lq", Texture::ImageType::k2d, kNoiseTexSize,
+                     kNoiseTexSize, 0, false, GL_REPEAT, GL_LINEAR, GL_RGBA,
+                     GL_FLOAT, noise_lq->data());
+  InsertNamedTexture("noise_mq", Texture::ImageType::k2d, kNoiseTexSize,
+                     kNoiseTexSize, 0, false, GL_REPEAT, GL_LINEAR, GL_RGBA,
+                     GL_FLOAT, noise_mq->data());
+  InsertNamedTexture("noise_hq", Texture::ImageType::k2d, kNoiseTexSize,
+                     kNoiseTexSize, 0, false, GL_REPEAT, GL_LINEAR, GL_RGBA,
+                     GL_FLOAT, noise_hq->data());
+  InsertNamedTexture("noisevol_lq", Texture::ImageType::k3d, kNoiseTexSizeSmall,
+                     kNoiseTexSizeSmall, kNoiseTexSizeSmall, false, GL_REPEAT,
+                     GL_LINEAR, GL_RGBA, GL_FLOAT, noise_lq->data());
+  InsertNamedTexture("noisevol_hq", Texture::ImageType::k3d, kNoiseTexSizeSmall,
+                     kNoiseTexSizeSmall, kNoiseTexSizeSmall, false, GL_REPEAT,
+                     GL_LINEAR, GL_RGBA, GL_FLOAT, noise_lq->data());
 }
 
 void TextureManager::LoadIdleTextures() {

@@ -201,11 +201,25 @@ void Fill(float output[W][H][C]) {
 
 }  // namespace
 
-PerlinNoiseWithAlpha::PerlinNoiseWithAlpha() {
-  Fill<256, 256, 4>(noise_lq);
-  Fill<32, 32, 4>(4, 16, noise_lq_lite);
-  Fill<256, 256, 4>(0.5f, 0.5f, noise_mq);
-  Fill<256, 256, 4>(1 / 3.0f, 1 / 3.0f, noise_hq);
-  Fill<32, 32, 32, 4>(noise_lq_vol);
-  Fill<32, 32, 32, 4>(noise_hq_vol);
+void FillPerlin(Image<float>* image) { FillPerlinScaled(1, 1, image); }
+
+void FillPerlinScaled(float scale_x, float scale_y, Image<float>* image) {
+  for (int x = 0; x < image->width(); ++x) {
+    for (int y = 0; y < image->height(); ++y) {
+      if (image->dimensionality() == Dimensionality::kDimensionality3d) {
+        for (int z = 0; z < image->depth(); ++z) {
+          for (int c = 0; c < image->num_channels() - 1; ++c) {
+            assert(scale_x == scale_y && scale_x == 1);
+            image->at(x, y, z, c) = Noise(x, y, z);
+          }
+          image->at(x, y, z, image->num_channels() - 1) = 1.0f;
+        }
+      } else {
+        for (int c = 0; c < image->num_channels() - 1; ++c) {
+          image->at(x, y, c) = Noise(x, y);
+        }
+        image->at(x, y, image->num_channels() - 1) = 1.0f;
+      }
+    }
+  }
 }
