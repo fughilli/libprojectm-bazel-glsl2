@@ -237,13 +237,7 @@ std::shared_ptr<Shader> TranspilePresetShader(
           texture_manager->GetTextureAndSampler(sampler, GL_REPEAT, GL_LINEAR);
 
       if (!texture_and_sampler.has_value()) {
-        if (lowerCaseName.substr(0, 4) == "rand" ||
-            lowerCaseName.substr(2, 5) == "_rand") {
-          texture_and_sampler =
-              texture_manager->GetRandomTextureAndSampler(sampler);
-        } else {
-          texture_and_sampler = texture_manager->LoadTextureAndSampler(sampler);
-        }
+        texture_and_sampler = texture_manager->LoadTextureAndSampler(sampler);
       }
 
       if (!texture_and_sampler.has_value()) {
