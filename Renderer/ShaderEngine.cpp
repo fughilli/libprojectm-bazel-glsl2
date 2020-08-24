@@ -196,27 +196,33 @@ std::shared_ptr<Shader> TranspilePresetShader(
 
   new_shader.textures_and_samplers["noise_lq"] =
       texture_manager
-          ->GetTextureAndSampler("noise_lq", kDefaultNoiseTextureSamplingMode, GL_LINEAR)
+          ->GetTextureAndSampler("noise_lq", kDefaultNoiseTextureSamplingMode,
+                                 GL_LINEAR)
           .value();
   new_shader.textures_and_samplers["noise_lq_lite"] =
       texture_manager
-          ->GetTextureAndSampler("noise_lq_lite", kDefaultNoiseTextureSamplingMode, GL_LINEAR)
+          ->GetTextureAndSampler("noise_lq_lite",
+                                 kDefaultNoiseTextureSamplingMode, GL_LINEAR)
           .value();
   new_shader.textures_and_samplers["noise_mq"] =
       texture_manager
-          ->GetTextureAndSampler("noise_mq", kDefaultNoiseTextureSamplingMode, GL_LINEAR)
+          ->GetTextureAndSampler("noise_mq", kDefaultNoiseTextureSamplingMode,
+                                 GL_LINEAR)
           .value();
   new_shader.textures_and_samplers["noise_hq"] =
       texture_manager
-          ->GetTextureAndSampler("noise_hq", kDefaultNoiseTextureSamplingMode, GL_LINEAR)
+          ->GetTextureAndSampler("noise_hq", kDefaultNoiseTextureSamplingMode,
+                                 GL_LINEAR)
           .value();
   new_shader.textures_and_samplers["noisevol_lq"] =
       texture_manager
-          ->GetTextureAndSampler("noisevol_lq", kDefaultNoiseTextureSamplingMode, GL_LINEAR)
+          ->GetTextureAndSampler("noisevol_lq",
+                                 kDefaultNoiseTextureSamplingMode, GL_LINEAR)
           .value();
   new_shader.textures_and_samplers["noisevol_hq"] =
       texture_manager
-          ->GetTextureAndSampler("noisevol_hq", kDefaultNoiseTextureSamplingMode, GL_LINEAR)
+          ->GetTextureAndSampler("noisevol_hq",
+                                 kDefaultNoiseTextureSamplingMode, GL_LINEAR)
           .value();
 
   // set up texture samplers for all samplers references in the shader program
@@ -830,7 +836,8 @@ void CompilePresetShaders(
 
   std::cout << "Starting shader compilation" << std::endl;
 
-  std::shared_ptr<Shader> new_composite_shader, new_warp_shader;
+  std::shared_ptr<Shader> new_composite_shader = nullptr,
+                          new_warp_shader = nullptr;
   ShaderCache new_composite_shader_cache, new_warp_shader_cache;
   // compile and link warp and composite shaders from pipeline
   std::string file_name, program_source;
@@ -839,46 +846,40 @@ void CompilePresetShaders(
     auto shader = pipeline->GetWarpShader();
     file_name = shader.second.file_name;
     program_source = shader.second.program_source;
-    if (program_source.empty()) {
-      return;
-    }
   }
 
-  new_warp_shader = TranspilePresetShader(
-      texture_manager, ShaderEngine::PresentShaderType::PresentWarpShader,
-      file_name, program_source, &new_warp_shader_cache);
-  if (new_warp_shader == nullptr) {
-    std::cerr << "Failed to transpile warp shader, exiting compilation!"
-              << std::endl;
-    return;
+  if (!program_source.empty()) {
+    new_warp_shader = TranspilePresetShader(
+        texture_manager, ShaderEngine::PresentShaderType::PresentWarpShader,
+        file_name, program_source, &new_warp_shader_cache);
+    if (new_warp_shader == nullptr) {
+      std::cerr << "Failed to transpile warp shader, exiting compilation!"
+                << std::endl;
+      return;
+    }
   }
 
   {
     auto shader = pipeline->GetCompositeShader();
     file_name = shader.second.file_name;
     program_source = shader.second.program_source;
-    if (program_source.empty()) {
+  }
+
+  if (!program_source.empty()) {
+    new_composite_shader = TranspilePresetShader(
+        texture_manager,
+        ShaderEngine::PresentShaderType::PresentCompositeShader, file_name,
+        program_source, &new_composite_shader_cache);
+    if (new_composite_shader == nullptr) {
+      std::cerr << "Failed to transpile composite shader, exiting compilation!"
+                << std::endl;
       return;
     }
   }
 
-  new_composite_shader = TranspilePresetShader(
-      texture_manager, ShaderEngine::PresentShaderType::PresentCompositeShader,
-      file_name, program_source, &new_composite_shader_cache);
-  if (new_composite_shader == nullptr) {
-    std::cerr << "Failed to transpile composite shader, exiting compilation!"
-              << std::endl;
-    return;
-  }
+  glFinish();
 
-  GLsync fenceId = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-  GLenum result;
-  while (true) {
-    result = glClientWaitSync(fenceId, GL_SYNC_FLUSH_COMMANDS_BIT,
-                              GLuint64(5000000000));
-    if (result != GL_TIMEOUT_EXPIRED) break;
-  }
-
+  std::cerr << "Finished shader compilation" << std::endl;
   compile_completed_callback(new_composite_shader, new_warp_shader,
                              new_composite_shader_cache, new_warp_shader_cache);
   deactivate_compile_context();
@@ -891,8 +892,8 @@ void ShaderEngine::UpdateShaders(Pipeline *pipeline,
                                  ShaderCache composite_shader_cache,
                                  ShaderCache warp_shader_cache) {
   std::lock_guard<std::mutex> program_reference_lock(program_reference_mutex_);
-  uniform_vertex_transf_warp_shader =
-      glGetUniformLocation(warp_shader->GetId(), "vertex_transformation");
+  std::cout << "Updating shaders" << std::endl;
+  ResetPerPresetState();
 
   pipeline->UpdateShaders(warp_shader_cache, composite_shader_cache);
   composite_shader_ = composite_shader;
@@ -920,14 +921,6 @@ void ShaderEngine::LoadPresetShadersAsync(Pipeline &pipeline,
       }
     }
   }
-
-  // CompilePresetShaders(&pipeline, texture_manager_,
-  //                     std::bind(&ShaderEngine::UpdateShaders, this,
-  //                     &pipeline,
-  //                               std::placeholders::_1,
-  //                               std::placeholders::_2,
-  //                               std::placeholders::_3,
-  //                               std::placeholders::_4));
 
   compile_thread_ =
       std::thread(&CompilePresetShaders, &pipeline, texture_manager_,
@@ -975,8 +968,10 @@ bool ShaderEngine::enableWarpShader(ShaderCache &shader,
 
     SetupShaderVariables(warp_shader_->GetId(), pipeline, pipelineContext);
 
-    glUniformMatrix4fv(uniform_vertex_transf_warp_shader, 1, GL_FALSE,
-                       glm::value_ptr(mat_ortho));
+    ;
+    glUniformMatrix4fv(
+        glGetUniformLocation(warp_shader_->GetId(), "vertex_transformation"), 1,
+        GL_FALSE, glm::value_ptr(mat_ortho));
 
     return true;
   }

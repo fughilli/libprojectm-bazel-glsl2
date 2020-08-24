@@ -52,6 +52,7 @@ cc_library(
         "//libprojectm:libprojectm_headers",
         "//libprojectm/Renderer/SOIL2:soil2",
         "@com_google_absl//absl/types:span",
+        "@com_google_absl//absl/strings",
         "@org_llvm_libcxx//:libcxx",
     ],
 )

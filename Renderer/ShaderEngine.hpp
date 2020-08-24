@@ -9,6 +9,8 @@
 #define SHADERENGINE_HPP_
 
 #include <cstdlib>
+#include <functional>
+#include <glm/vec3.hpp>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -20,11 +22,9 @@
 #include "Shader.hpp"
 #include "TextureManager.hpp"
 #include "projectM-opengl.h"
-#include <glm/vec3.hpp>
-#include <functional>
 
 class ShaderEngine {
-public:
+ public:
   enum PresentShaderType {
     PresentCompositeShader,
     PresentWarpShader,
@@ -32,7 +32,8 @@ public:
     PresentBlur2Shader,
   };
 
-  ShaderEngine(std::function<void()> activateCompileContext, std::function<void()> deactivateCompileContext);
+  ShaderEngine(std::function<void()> activateCompileContext,
+               std::function<void()> deactivateCompileContext);
   virtual ~ShaderEngine();
   void LoadPresetShadersAsync(Pipeline &pipeline, std::string_view preset_name);
   bool enableWarpShader(ShaderCache &shader, const Pipeline &pipeline,
@@ -46,14 +47,13 @@ public:
                  BeatDetect *beatDetect,
                  std::shared_ptr<TextureManager> texture_manager);
 
-private:
+ private:
   int texsizeX;
   int texsizeY;
   float aspectX;
   float aspectY;
   BeatDetect *beatDetect;
   std::shared_ptr<TextureManager> texture_manager_;
-  GLint uniform_vertex_transf_warp_shader;
 
   GLuint vboBlur;
   GLuint vaoBlur;
@@ -72,6 +72,9 @@ private:
                      std::shared_ptr<Shader> warp_shader,
                      ShaderCache composite_shader_cache,
                      ShaderCache warp_shader_cache);
+
+  void ResetShaders();
+  void ResetShadersAsync();
 
   std::mutex program_reference_mutex_;
   // programs generated from preset shader code

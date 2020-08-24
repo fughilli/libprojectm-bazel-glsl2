@@ -9,7 +9,7 @@
 #include "Waveform.hpp"
 #include <algorithm>
 #include <cmath>
-#include "StaticShaders.hpp",
+#include "StaticShaders.hpp"
 #include "BeatDetect.hpp"
 #include "ShaderEngine.hpp"
 #include <glm/gtc/type_ptr.hpp>
