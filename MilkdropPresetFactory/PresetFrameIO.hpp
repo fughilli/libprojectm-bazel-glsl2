@@ -67,11 +67,8 @@ public:
 /// Every preset object needs a reference to one of these.
 class PresetOutputs : public Pipeline {
 public:
-    typedef std::vector<CustomWave*> cwave_container;
-    typedef std::vector<CustomShape*> cshape_container;
-
-    cwave_container customWaves;
-    cshape_container customShapes;
+    std::vector<std::shared_ptr<CustomWave>> customWaves;
+    std::vector<std::shared_ptr<CustomShape>> customShapes;
 
     void Initialize(int _gx, int _gy);
     PresetOutputs();
@@ -92,20 +89,18 @@ public:
     float cx;
     float cy;
 
-    VideoEcho videoEcho;
+    std::shared_ptr<VideoEcho> videoEcho;
 
-    MilkdropWaveform wave;
-    Border border;
-    MotionVectors mv;
-    DarkenCenter darkenCenter;
+    std::shared_ptr<MilkdropWaveform> wave;
+    std::shared_ptr<Border> border;
+    std::shared_ptr<MotionVectors> mv;
+    std::shared_ptr<DarkenCenter> darkenCenter;
 
-    Brighten brighten;
-    Darken darken;
-    Invert invert;
-    Solarize solarize;
+    std::shared_ptr<Brighten> brighten;
+    std::shared_ptr<Darken> darken;
+    std::shared_ptr<Invert> invert;
+    std::shared_ptr<Solarize> solarize;
 
-
-    int gy,gx;
     /* PER_FRAME VARIABLES END */
 
     float fRating;

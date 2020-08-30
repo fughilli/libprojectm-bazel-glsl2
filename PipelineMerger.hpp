@@ -17,6 +17,8 @@ public:
   static void mergePipelines(Pipeline &a,  Pipeline &b, Pipeline &out, 
 	RenderItemMatcher::MatchResults & matching, RenderItemMergeFunction & merger, float ratio);
 
+  static void DisableBlending(const Pipeline& pipeline);
+
 private :
 
 static const double s;

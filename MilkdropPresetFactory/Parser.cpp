@@ -53,8 +53,8 @@
    to the raw string */
 
 line_mode_t Parser::line_mode;
-CustomWave *Parser::current_wave;
-CustomShape *Parser::current_shape;
+std::shared_ptr<CustomWave>Parser::current_wave;
+std::shared_ptr<CustomShape>Parser::current_shape;
 int Parser::string_line_buffer_index;
 char Parser::string_line_buffer[STRING_LINE_SIZE];
 unsigned int Parser::line_count;
@@ -643,7 +643,7 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
     {
       tokenWrapAroundEnabled = true;
       //Added by PJS. I hope I did it right
-      CustomWave * custom_wave;
+      std::shared_ptr<CustomWave> custom_wave;
 
       /* Retrieve custom shape associated with this id */
       if ((custom_wave = MilkdropPreset::find_custom_object(last_custom_wave_id, preset->customWaves)) == NULL)
@@ -665,7 +665,7 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
     {
       tokenWrapAroundEnabled = true;
 
-      CustomShape * custom_shape;
+      std::shared_ptr<CustomShape> custom_shape;
 
       /* Retrieve custom shape associated with this id */
       if ((custom_shape = MilkdropPreset::find_custom_object(last_custom_shape_id, preset->customShapes)) == NULL)
@@ -677,7 +677,7 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
     else if (line_mode == CUSTOM_SHAPE_PER_FRAME_INIT_LINE_MODE)
     {
       tokenWrapAroundEnabled = true;
-      CustomShape * custom_shape;
+      std::shared_ptr<CustomShape> custom_shape;
 
       /* Retrieve custom shape associated with this id */
       if ((custom_shape = preset->find_custom_object(last_custom_shape_id, preset->customShapes)) == NULL)
@@ -1757,7 +1757,7 @@ int Parser::parse_wavecode(char * token, std::istream &  fs, MilkdropPreset * pr
 
   char * var_string;
   InitCond * init_cond;
-  CustomWave * custom_wave;
+  std::shared_ptr<CustomWave> custom_wave;
   int id;
   CValue init_val;
   Param * param;
@@ -1855,7 +1855,7 @@ int Parser::parse_shapecode(char * token, std::istream &  fs, MilkdropPreset * p
 
   char * var_string;
   InitCond * init_cond;
-  CustomShape * custom_shape;
+  std::shared_ptr<CustomShape> custom_shape;
   int id;
   CValue init_val;
   Param * param;
@@ -2179,7 +2179,7 @@ int Parser::parse_wave_helper(std::istream &  fs, MilkdropPreset  * preset, int 
   Expr * gen_expr;
   char string[MAX_TOKEN_SIZE];
   PerFrameEqn * per_frame_eqn;
-  CustomWave * custom_wave;
+  std::shared_ptr<CustomWave> custom_wave;
   InitCond * init_cond;
 
   /* Retrieve custom wave associated with this id */
@@ -2330,7 +2330,7 @@ int Parser::parse_shape(char * token, std::istream &  fs, MilkdropPreset * prese
 
   int id;
   char * eqn_type;
-  CustomShape * custom_shape;
+  std::shared_ptr<CustomShape> custom_shape;
 
 
   if (token == NULL)
@@ -2418,7 +2418,7 @@ int Parser::get_string_prefix_len(char * string)
   return i;
 }
 
-int Parser::parse_shape_per_frame_init_eqn(std::istream &  fs, CustomShape * custom_shape, MilkdropPreset * preset)
+int Parser::parse_shape_per_frame_init_eqn(std::istream &  fs, std::shared_ptr<CustomShape> custom_shape, MilkdropPreset * preset)
 {
   InitCond * init_cond;
 
@@ -2440,7 +2440,7 @@ int Parser::parse_shape_per_frame_init_eqn(std::istream &  fs, CustomShape * cus
   return PROJECTM_SUCCESS;
 }
 
-int Parser::parse_shape_per_frame_eqn(std::istream & fs, CustomShape * custom_shape, MilkdropPreset * preset)
+int Parser::parse_shape_per_frame_eqn(std::istream & fs, std::shared_ptr<CustomShape> custom_shape, MilkdropPreset * preset)
 {
 
   Param * param;
@@ -2502,7 +2502,7 @@ int Parser::parse_shape_per_frame_eqn(std::istream & fs, CustomShape * custom_sh
   return PROJECTM_SUCCESS;
 }
 
-int Parser::parse_wave_per_frame_eqn(std::istream &  fs, CustomWave * custom_wave, MilkdropPreset * preset)
+int Parser::parse_wave_per_frame_eqn(std::istream &  fs, std::shared_ptr<CustomWave> custom_wave, MilkdropPreset * preset)
 {
 
   Param * param;

@@ -170,7 +170,7 @@ Renderer::Renderer(int width, int height, int gx, int gy, BeatDetect* _beatDetec
 	textureRenderToTexture = 0;
 
 	int size = (mesh.height - 1) * mesh.width * 4 * 2;
-	p = static_cast<float *>(wipemalloc(size * sizeof(float)));
+	pixel_mesh_.reset(new float[size]);
 
 
 	for (int j = 0; j < mesh.height - 1; j++)
@@ -184,11 +184,11 @@ Renderer::Renderer(int width, int height, int gx, int gy, BeatDetect* _beatDetec
 			int index2 = (j + 1) * mesh.width + i;
 
 			int strip = base + i * 8;
-			p[strip + 0] = mesh.identity[index].x;
-			p[strip + 1] = mesh.identity[index].y;
+			pixel_mesh_.get()[strip + 0] = mesh.identity[index].x;
+			pixel_mesh_.get()[strip + 1] = mesh.identity[index].y;
 
-			p[strip + 4] = mesh.identity[index2].x;
-			p[strip + 5] = mesh.identity[index2].y;
+			pixel_mesh_.get()[strip + 4] = mesh.identity[index2].x;
+			pixel_mesh_.get()[strip + 5] = mesh.identity[index2].y;
 		}
 	}
 
@@ -321,14 +321,11 @@ void Renderer::RenderItems(const Pipeline& pipeline, const PipelineContext& pipe
 	renderContext.texture_manager_ = texture_manager_;
 	renderContext.beatDetect = beatDetect;
 
-	for (std::vector<RenderItem*>::const_iterator pos = pipeline.drawables.begin(); pos != pipeline.drawables.end(); ++
-	     pos)
-	{
-		if (*pos != nullptr)
-		{
-			(*pos)->Draw(renderContext);
-		}
-	}
+    for(auto& drawable : pipeline.drawables) {
+        if (drawable != nullptr) {
+            drawable->Draw(renderContext);
+        }
+    }
 }
 
 void Renderer::FinishPass1()
@@ -438,7 +435,7 @@ void Renderer::Interpolation(const Pipeline& pipeline, const PipelineContext& pi
 
 	int size = (mesh.height - 1) * mesh.width * 4 * 2;
 
-	if (pipeline.staticPerPixel)
+	if (pipeline.static_per_pixel())
 	{
 		for (int j = 0; j < mesh.height - 1; j++)
 		{
@@ -447,11 +444,11 @@ void Renderer::Interpolation(const Pipeline& pipeline, const PipelineContext& pi
 			for (int i = 0; i < mesh.width; i++)
 			{
 				int strip = base + i * 8;
-				p[strip + 2] = pipeline.x_mesh[i][j];
-				p[strip + 3] = pipeline.y_mesh[i][j];
+				pixel_mesh_.get()[strip + 2] = pipeline.x_mesh_at(i, j);
+				pixel_mesh_.get()[strip + 3] = pipeline.y_mesh_at(i, j);
 
-				p[strip + 6] = pipeline.x_mesh[i][j + 1];
-				p[strip + 7] = pipeline.y_mesh[i][j + 1];
+				pixel_mesh_.get()[strip + 6] = pipeline.x_mesh_at(i, j + 1);
+				pixel_mesh_.get()[strip + 7] = pipeline.y_mesh_at(i, j + 1);
 			}
 		}
 	}
@@ -470,11 +467,11 @@ void Renderer::Interpolation(const Pipeline& pipeline, const PipelineContext& pi
 				int index = j * mesh.width + i;
 				int index2 = (j + 1) * mesh.width + i;
 
-				p[strip + 2] = mesh.p[index].x;
-				p[strip + 3] = mesh.p[index].y;
+				pixel_mesh_.get()[strip + 2] = mesh.p[index].x;
+				pixel_mesh_.get()[strip + 3] = mesh.p[index].y;
 
-				p[strip + 6] = mesh.p[index2].x;
-				p[strip + 7] = mesh.p[index2].y;
+				pixel_mesh_.get()[strip + 6] = mesh.p[index2].x;
+				pixel_mesh_.get()[strip + 7] = mesh.p[index2].y;
 			}
 		}
 	}
@@ -482,7 +479,7 @@ void Renderer::Interpolation(const Pipeline& pipeline, const PipelineContext& pi
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo_Interpolation);
 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * size, nullptr, GL_DYNAMIC_DRAW);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * size, p, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * size, pixel_mesh_.get(), GL_DYNAMIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -511,8 +508,6 @@ void Renderer::Interpolation(const Pipeline& pipeline, const PipelineContext& pi
 
 Renderer::~Renderer()
 {
-	free(p);
-
 	glDeleteBuffers(1, &m_vbo_Interpolation);
 	glDeleteVertexArrays(1, &m_vao_Interpolation);
 
@@ -749,9 +744,9 @@ void Renderer::CompositeOutput(const Pipeline& pipeline, const PipelineContext& 
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	for (std::vector<RenderItem*>::const_iterator pos = pipeline.compositeDrawables.begin(); pos
-	     != pipeline.compositeDrawables.end(); ++pos)
-		(*pos)->Draw(renderContext);
+    for (auto& composite_drawable : pipeline.compositeDrawables) {
+        composite_drawable->Draw(renderContext);
+    }
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 }

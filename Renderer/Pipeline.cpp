@@ -5,30 +5,38 @@
  *      Author: pete
  */
 #include "Pipeline.hpp"
-#include "wipemalloc.h"
 
-Pipeline::Pipeline() : staticPerPixel(false),gx(0),gy(0),blur1n(1), blur2n(1), blur3n(1),
-blur1x(1), blur2x(1), blur3x(1),
-blur1ed(1){}
+#include <algorithm>
 
-void Pipeline::setStaticPerPixel(int _gx, int _gy)
-{
-	staticPerPixel = true;
-    this->gx = _gx;
-    this->gy = _gy;
-
-	this->x_mesh = alloc_mesh(gx, gy);
-	this->y_mesh = alloc_mesh(gx, gy);
+Pipeline::Pipeline()
+    : static_per_pixel_(false),
+      gx_(0),
+      gy_(0),
+      blur1n(1),
+      blur2n(1),
+      blur3n(1),
+      blur1x(1),
+      blur2x(1),
+      blur3x(1),
+      blur1ed(1),
+      textureWrap(false),
+      screenDecay(false) {
+  std::fill(q, q + NUM_Q_VARIABLES, 0);
+  x_mesh_.reset(new float[1]);
+  y_mesh_.reset(new float[1]);
 }
 
-Pipeline::~Pipeline()
-{
-	if (staticPerPixel)
-	{
-		free_mesh(x_mesh);
-		free_mesh(y_mesh);
-	}
+void Pipeline::SetStaticPerPixel(int gx, int gy) {
+  static_per_pixel_ = true;
+  gx_ = gx;
+  gy_ = gy;
+
+  x_mesh_.reset(new float[gx * gy]);
+  y_mesh_.reset(new float[gx * gy]);
 }
 
-PixelPoint Pipeline::PerPixel(PixelPoint p, const PerPixelContext context)
-{return p;}
+Pipeline::~Pipeline() {}
+
+PixelPoint Pipeline::PerPixel(PixelPoint p, const PerPixelContext context) {
+  return p;
+}

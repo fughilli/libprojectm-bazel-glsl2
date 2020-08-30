@@ -83,7 +83,7 @@ public:
 
   /// Used by parser to find/create custom waves and shapes. May be refactored
   template <class CustomObject>
-  static CustomObject * find_custom_object(int id, std::vector<CustomObject*> & customObjects);
+  static std::shared_ptr<CustomObject> find_custom_object(int id, std::vector<std::shared_ptr<CustomObject>> & customObjects);
 
 
   int per_pixel_eqn_string_index;
@@ -123,8 +123,8 @@ public:
 
 // @bug encapsulate
 
-  PresetOutputs::cwave_container customWaves;
-  PresetOutputs::cshape_container customShapes;
+  std::vector<std::shared_ptr<CustomWave>> customWaves;
+  std::vector<std::shared_ptr<CustomShape>> customShapes;
 
   /// @bug encapsulate
   /* Data structures that contain equation and initial condition information */
@@ -180,57 +180,39 @@ private:
   PresetOutputs & _presetOutputs;
 
 template <class CustomObject>
-void transfer_q_variables(std::vector<CustomObject*> & customObjects);
+void transfer_q_variables(std::vector<std::shared_ptr<CustomObject>> & customObjects);
 
 friend class MilkdropPresetFactory;
 };
 
-
 template <class CustomObject>
-void MilkdropPreset::transfer_q_variables(std::vector<CustomObject*> & customObjects)
-{
- 	CustomObject * custom_object;
-
-	for (typename std::vector<CustomObject*>::iterator pos = customObjects.begin(); pos != customObjects.end();++pos) {
-
-		custom_object = *pos;
-		for (unsigned int i = 0; i < NUM_Q_VARIABLES; i++)
-			custom_object->q[i] = _presetOutputs.q[i];
-	}
-
-
+void MilkdropPreset::transfer_q_variables(
+    std::vector<std::shared_ptr<CustomObject>> &customObjects) {
+  for (auto &object : customObjects) {
+    for (int i = 0; i < NUM_Q_VARIABLES; ++i) {
+      object->q[i] = _presetOutputs.q[i];
+    }
+  }
 }
 
 template <class CustomObject>
-CustomObject * MilkdropPreset::find_custom_object(int id, std::vector<CustomObject*> & customObjects)
-{
+std::shared_ptr<CustomObject> MilkdropPreset::find_custom_object(
+    int id, std::vector<std::shared_ptr<CustomObject>> &customObjects) {
+  std::shared_ptr<CustomObject> custom_object;
 
-  CustomObject * custom_object = NULL;
-
-
-  for (typename std::vector<CustomObject*>::iterator pos = customObjects.begin(); pos != customObjects.end();++pos) {
-	if ((*pos)->id == id) {
-		custom_object = *pos;
-		break;
-	}
-  }
-
-  if (custom_object == NULL)
-  {
-
-    if ((custom_object = new CustomObject(id)) == NULL)
-    {
-      return NULL;
+  for (auto &object : customObjects) {
+    if (object->id == id) {
+      custom_object = object;
+      break;
     }
-
-      customObjects.push_back(custom_object);
-
   }
 
-  assert(custom_object);
+  if (custom_object == nullptr) {
+    custom_object = std::make_unique<CustomObject>(id);
+    customObjects.push_back(custom_object);
+  }
+
   return custom_object;
 }
-
-
 
 #endif /** !_MilkdropPreset_HPP */

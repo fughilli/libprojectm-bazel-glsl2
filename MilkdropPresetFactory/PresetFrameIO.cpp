@@ -100,14 +100,23 @@ void PresetInputs::Initialize ( int _gx, int _gy )
 	}
 }
 
+PresetOutputs::PresetOutputs() : Pipeline() {
+  videoEcho = std::make_shared<VideoEcho>();
 
-PresetOutputs::PresetOutputs() : Pipeline()
-{}
+  wave = std::make_shared<MilkdropWaveform>();
+  border = std::make_shared<Border>();
+  mv = std::make_shared<MotionVectors>();
+  darkenCenter = std::make_shared<DarkenCenter>();
 
+  brighten = std::make_shared<Brighten>();
+  darken = std::make_shared<Darken>();
+  invert = std::make_shared<Invert>();
+  solarize = std::make_shared<Solarize>();
+}
 
 PresetOutputs::~PresetOutputs()
 {
-	assert(this->gx > 0);
+	assert(this->gx_ > 0);
 
 	this->rad_mesh = free_mesh(this->rad_mesh);
 	this->sx_mesh  = free_mesh(this->sx_mesh);
@@ -128,66 +137,67 @@ PresetOutputs::~PresetOutputs()
     drawables.clear();
 }
 
+void PresetOutputs::Render(const BeatDetect &music,
+                           const PipelineContext &context) {
+  PerPixelMath(context);
 
-void PresetOutputs::Render(const BeatDetect &music, const PipelineContext &context)
-{
-	PerPixelMath(context);
+  drawables.clear();
 
-	drawables.clear();
+  drawables.push_back(mv);
 
-	drawables.push_back(&mv);
+  for (auto &shape : customShapes) {
+    if (shape->enabled) {
+      drawables.push_back(shape);
+    }
+  }
 
-	for (PresetOutputs::cshape_container::iterator pos = customShapes.begin();
-			pos != customShapes.end(); ++pos)
-	{
-		if ((*pos)->enabled==1)
-			drawables.push_back((*pos));
-	}
+  for (auto &wave : customWaves) {
+    if (wave->enabled) {
+      drawables.push_back(wave);
+    }
+  }
 
-	for (PresetOutputs::cwave_container::iterator pos = customWaves.begin();
-			pos != customWaves.end(); ++pos)
-	{
-		if ((*pos)->enabled==1)
-			drawables.push_back((*pos));
-	}
+  drawables.push_back(wave);
 
-	drawables.push_back(&wave);
+  if (bDarkenCenter) {
+    drawables.push_back(darkenCenter);
+  }
+  drawables.push_back(border);
 
-	if (bDarkenCenter==1)
-		drawables.push_back(&darkenCenter);
-	drawables.push_back(&border);
+  compositeDrawables.clear();
+  compositeDrawables.push_back(videoEcho);
 
-	compositeDrawables.clear();
-	compositeDrawables.push_back(&videoEcho);
+  if (bBrighten) {
+    compositeDrawables.push_back(brighten);
+  }
 
-	if (bBrighten==1)
-		compositeDrawables.push_back(&brighten);
+  if (bDarken) {
+    compositeDrawables.push_back(darken);
+  }
 
-	if (bDarken==1)
-		compositeDrawables.push_back(&darken);
+  if (bSolarize) {
+    compositeDrawables.push_back(solarize);
+  }
 
-	if (bSolarize==1)
-		compositeDrawables.push_back(&solarize);
-
-	if (bInvert==1)
-		compositeDrawables.push_back(&invert);
+  if (bInvert) {
+    compositeDrawables.push_back(invert);
+  }
 }
-
 
 // N.B. The more optimization that can be done on this method, the better! This is called a lot and can probably be improved.
 void PresetOutputs::PerPixelMath_c(const PipelineContext &context)
 {
-	for (int x = 0; x < gx; x++)
+	for (int x = 0; x < gx_; x++)
 	{
-		for (int y = 0; y < gy; y++)
+		for (int y = 0; y < gy_; y++)
 		{
 			const float fZoom2 = std::pow(this->zoom_mesh[x][y], std::pow(this->zoomexp_mesh[x][y],
 					rad_mesh[x][y] * 2.0f - 1.0f));
 			const float fZoom2Inv = 1.0f / fZoom2;
-			this->x_mesh[x][y] = this->orig_x[x][y] * 0.5f * fZoom2Inv + 0.5f;
-			this->x_mesh[x][y] = (this->x_mesh[x][y] - this->cx_mesh[x][y]) / this->sx_mesh[x][y] + this->cx_mesh[x][y];
-			this->y_mesh[x][y] = this->orig_y[x][y] * 0.5f * fZoom2Inv + 0.5f;
-			this->y_mesh[x][y] = (this->y_mesh[x][y] - this->cy_mesh[x][y]) / this->sy_mesh[x][y] + this->cy_mesh[x][y];
+			x_mesh_at(x, y) = this->orig_x[x][y] * 0.5f * fZoom2Inv + 0.5f;
+			x_mesh_at(x, y) = (x_mesh_at(x, y) - this->cx_mesh[x][y]) / this->sx_mesh[x][y] + this->cx_mesh[x][y];
+			y_mesh_at(x, y) = this->orig_y[x][y] * 0.5f * fZoom2Inv + 0.5f;
+			y_mesh_at(x, y) = (y_mesh_at(x, y) - this->cy_mesh[x][y]) / this->sy_mesh[x][y] + this->cy_mesh[x][y];
 		}
 	}
 
@@ -199,37 +209,37 @@ void PresetOutputs::PerPixelMath_c(const PipelineContext &context)
 	f[2] = 10.54f + 3.0f * cosf(fWarpTime * 1.233f + 3);
 	f[3] = 11.49f + 4.0f * cosf(fWarpTime * 0.933f + 5);
 
-	for (int x = 0; x < gx; x++)
+	for (int x = 0; x < gx_; x++)
 	{
-		for (int y = 0; y < gy; y++)
+		for (int y = 0; y < gy_; y++)
 		{
             const float orig_x2 = this->orig_x[x][y];
             const float orig_y2 = this->orig_y[x][y];
             const float warp_mesh2 = this->warp_mesh[x][y] * 0.0035f;
 
-			this->x_mesh[x][y] +=
+			x_mesh_at(x, y) +=
                 (warp_mesh2 * sinf(fWarpTime * 0.333f + fWarpScaleInv * (orig_x2 * f[0] - orig_y2 * f[3]))) +
                 (warp_mesh2 * cosf(fWarpTime * 0.753f - fWarpScaleInv * (orig_x2 * f[1] - orig_y2 * f[2])));
 
-			this->y_mesh[x][y] +=
+			y_mesh_at(x, y) +=
                 (warp_mesh2 * cosf(fWarpTime * 0.375f - fWarpScaleInv * (orig_x2 * f[2] + orig_y2 * f[1]))) +
                 (warp_mesh2 * sinf(fWarpTime * 0.825f + fWarpScaleInv * (orig_x2 * f[0] + orig_y2 * f[3])));
 		}
 	}
 
-	for (int x = 0; x < gx; x++)
+	for (int x = 0; x < gx_; x++)
 	{
-		for (int y = 0; y < gy; y++)
+		for (int y = 0; y < gy_; y++)
 		{
-			const float u2 = this->x_mesh[x][y] - this->cx_mesh[x][y];
-			const float v2 = this->y_mesh[x][y] - this->cy_mesh[x][y];
+			const float u2 = x_mesh_at(x, y) - this->cx_mesh[x][y];
+			const float v2 = y_mesh_at(x, y) - this->cy_mesh[x][y];
 
             const float rot2 = this->rot_mesh[x][y];
             const float cos_rot = cosf(rot2);
             const float sin_rot = sinf(rot2);
 
-			this->x_mesh[x][y] = u2 * cos_rot - v2 * sin_rot + this->cx_mesh[x][y] - this->dx_mesh[x][y];
-			this->y_mesh[x][y] = u2 * sin_rot + v2 * cos_rot + this->cy_mesh[x][y] - this->dy_mesh[x][y];
+			x_mesh_at(x, y) = u2 * cos_rot - v2 * sin_rot + this->cx_mesh[x][y] - this->dx_mesh[x][y];
+			y_mesh_at(x, y) = u2 * sin_rot + v2 * cos_rot + this->cy_mesh[x][y] - this->dy_mesh[x][y];
 		}
 	}
 }
@@ -289,9 +299,9 @@ inline __m128 _mm_cosf(__m128 x)
 
 void PresetOutputs::PerPixelMath_sse(const PipelineContext &context)
 {
-	for (int x = 0; x < gx; x++)
+	for (int x = 0; x < gx_; x++)
 	{
-		for (int y = 0; y < gy; y += 4)
+		for (int y = 0; y < gy_; y += 4)
 		{
 			// fZoom2 = std::pow(this->zoom_mesh[x][y], std::pow(this->zoomexp_mesh[x][y],
 			// 		rad_mesh[x][y] * 2.0f - 1.0f));
@@ -307,17 +317,17 @@ void PresetOutputs::PerPixelMath_sse(const PipelineContext &context)
 			// fZoom2Inv = 1.0f / fZoom2;
 			__m128 fZoomInv = _mm_rcp_ps(fZoom2);
 
-			// this->x_mesh[x][y] = this->orig_x[x][y] * 0.5f * fZoom2Inv + 0.5f;
+			// x_mesh_at(x, y) = this->orig_x[x][y] * 0.5f * fZoom2Inv + 0.5f;
             __m128 x_mesh2 =
 				_mm_add_ps(
 					_mm_mul_ps(
 						_mm_load_ps(&this->orig_x[x][y]),
 						_mm_mul_ps(fZoomInv,_mm_set_ps1(0.5f))),		// CONSIDER: common sub-expression
 					_mm_set_ps1(0.5f));
-			// this->x_mesh[x][y] = (this->x_mesh[x][y] - this->cx_mesh[x][y]) / this->sx_mesh[x][y] + this->cx_mesh[x][y];
+			// x_mesh_at(x, y) = (x_mesh_at(x, y) - this->cx_mesh[x][y]) / this->sx_mesh[x][y] + this->cx_mesh[x][y];
             __m128 cx_mesh2 = _mm_load_ps(&this->cx_mesh[x][y]);
             __m128 sx_mesh2 = _mm_load_ps(&this->sx_mesh[x][y]);
-			_mm_store_ps(&this->x_mesh[x][y],
+			_mm_store_ps(&x_mesh_at(x, y),
 				_mm_add_ps(
 					_mm_div_ps(
                         _mm_sub_ps(x_mesh2,cx_mesh2),
@@ -325,17 +335,17 @@ void PresetOutputs::PerPixelMath_sse(const PipelineContext &context)
                     cx_mesh2
 				));
 
-			// this->y_mesh[x][y] = this->orig_y[x][y] * 0.5f * fZoom2Inv + 0.5f;
+			// y_mesh_at(x, y) = this->orig_y[x][y] * 0.5f * fZoom2Inv + 0.5f;
             __m128 y_mesh2 =
 				_mm_add_ps(
 					_mm_mul_ps(
 						_mm_load_ps(&this->orig_y[x][y]),
 						_mm_mul_ps(fZoomInv,_mm_set_ps1(0.5f))),
 					_mm_set_ps1(0.5f));
-			// this->y_mesh[x][y] = (this->y_mesh[x][y] - this->cy_mesh[x][y]) / this->sy_mesh[x][y] + this->cy_mesh[x][y];
+			// y_mesh_at(x, y) = (y_mesh_at(x, y) - this->cy_mesh[x][y]) / this->sy_mesh[x][y] + this->cy_mesh[x][y];
             __m128 cy_mesh2 = _mm_load_ps(&this->cy_mesh[x][y]);
             __m128 sy_mesh2 = _mm_load_ps(&this->sy_mesh[x][y]);
-			_mm_store_ps(&this->y_mesh[x][y],
+			_mm_store_ps(&y_mesh_at(x, y),
 				_mm_add_ps(
 					_mm_div_ps(
                         _mm_sub_ps(y_mesh2,cy_mesh2),
@@ -355,9 +365,9 @@ void PresetOutputs::PerPixelMath_sse(const PipelineContext &context)
 		11.49f + 4.0f * cosf(fWarpTime * 0.933f + 5)
 	};
 
-	for (int x = 0; x < gx; x++)
+	for (int x = 0; x < gx_; x++)
 	{
-		for (int y = 0; y < gy; y+=4)
+		for (int y = 0; y < gy_; y+=4)
 		{
 			//float orig_x = this->orig_x[x][y];
 			//float orig_y = this->orig_y[x][y];
@@ -366,11 +376,11 @@ void PresetOutputs::PerPixelMath_sse(const PipelineContext &context)
             const __m128 orig_y2 = _mm_load_ps(&this->orig_y[x][y]);
             const __m128 warp_mesh2 = _mm_mul_ps(_mm_load_ps(&this->warp_mesh[x][y]), _mm_set_ps1(0.0035f));
 
-			// this->x_mesh[x][y] +=
+			// x_mesh_at(x, y) +=
 			// 	(warp_mesh * sinf(fWarpTime * 0.333f + fWarpScaleInv * (orig_x * f[0] - orig_y * f[3]))) +
 			// 	(warp_mesh * cosf(fWarpTime * 0.753f - fWarpScaleInv * (orig_x * f[1] - orig_y * f[2])));
-			_mm_store_ps(&this->x_mesh[x][y],
-				_mm_add_ps(_mm_load_ps(&this->x_mesh[x][y]),
+			_mm_store_ps(&x_mesh_at(x, y),
+				_mm_add_ps(_mm_load_ps(&x_mesh_at(x, y)),
 					_mm_add_ps(
                         _mm_mul_ps(warp_mesh2, _mm_sinf(
 							_mm_add_ps(
@@ -389,11 +399,11 @@ void PresetOutputs::PerPixelMath_sse(const PipelineContext &context)
                                         _mm_mul_ps(orig_y2, _mm_set_ps1(f[2]))
 									))))))));
 
-			// this->y_mesh[x][y] +=
+			// y_mesh_at(x, y) +=
 			// 	(warp_mesh * cosf(fWarpTime * 0.375f - fWarpScaleInv * (orig_x * f[2] + orig_y * f[1]))) +
 			// 	(warp_mesh * sinf(fWarpTime * 0.825f + fWarpScaleInv * (orig_x * f[0] + orig_y * f[3])));
-			_mm_store_ps(&this->y_mesh[x][y],
-				_mm_add_ps(_mm_load_ps(&this->y_mesh[x][y]),
+			_mm_store_ps(&y_mesh_at(x, y),
+				_mm_add_ps(_mm_load_ps(&y_mesh_at(x, y)),
 					_mm_add_ps(
                         _mm_mul_ps(warp_mesh2, _mm_cosf(
 							_mm_sub_ps(
@@ -413,14 +423,14 @@ void PresetOutputs::PerPixelMath_sse(const PipelineContext &context)
 									))))))));
 		}
 	}
-	for (int x = 0; x < gx; x++)
+	for (int x = 0; x < gx_; x++)
 	{
-		for (int y = 0; y < gy; y+=4)
+		for (int y = 0; y < gy_; y+=4)
 		{
-			// const float u2 = this->x_mesh[x][y] - this->cx_mesh[x][y];
-			// const float v2 = this->y_mesh[x][y] - this->cy_mesh[x][y];
-			const __m128 u2 = _mm_sub_ps(_mm_load_ps(&this->x_mesh[x][y]),_mm_load_ps(&this->cx_mesh[x][y]));
-			const __m128 v2 = _mm_sub_ps(_mm_load_ps(&this->y_mesh[x][y]),_mm_load_ps(&this->cy_mesh[x][y]));
+			// const float u2 = x_mesh_at(x, y) - this->cx_mesh[x][y];
+			// const float v2 = y_mesh_at(x, y) - this->cy_mesh[x][y];
+			const __m128 u2 = _mm_sub_ps(_mm_load_ps(&x_mesh_at(x, y)),_mm_load_ps(&this->cx_mesh[x][y]));
+			const __m128 v2 = _mm_sub_ps(_mm_load_ps(&y_mesh_at(x, y)),_mm_load_ps(&this->cy_mesh[x][y]));
 
 			// const float rot = this->rot_mesh[x][y];
 			// const float cos_rot = cosf(rot);
@@ -428,14 +438,14 @@ void PresetOutputs::PerPixelMath_sse(const PipelineContext &context)
 			__m128 sin_rot, cos_rot;
 			_mm_sincosf(_mm_load_ps(&this->rot_mesh[x][y]), sin_rot, cos_rot);
 
-			// this->x_mesh[x][y] = u2 * cos_rot - v2 * sin_rot + this->cx_mesh[x][y] - this->dx_mesh[x][y];
-			_mm_store_ps(&this->x_mesh[x][y],
+			// x_mesh_at(x, y) = u2 * cos_rot - v2 * sin_rot + this->cx_mesh[x][y] - this->dx_mesh[x][y];
+			_mm_store_ps(&x_mesh_at(x, y),
 				_mm_add_ps(
 					_mm_sub_ps(_mm_mul_ps(u2, cos_rot), _mm_mul_ps(v2,sin_rot)),
 					_mm_sub_ps(_mm_load_ps(&this->cx_mesh[x][y]), _mm_load_ps(&this->dx_mesh[x][y]))
 					));
-			// this->y_mesh[x][y] = u2 * sin_rot + v2 * cos_rot + this->cy_mesh[x][y] - this->dy_mesh[x][y];
-			_mm_store_ps(&this->y_mesh[x][y],
+			// y_mesh_at(x, y) = u2 * sin_rot + v2 * cos_rot + this->cy_mesh[x][y] - this->dy_mesh[x][y];
+			_mm_store_ps(&y_mesh_at(x, y),
 				_mm_add_ps(
 					_mm_add_ps(_mm_mul_ps(u2, sin_rot), _mm_mul_ps(v2,cos_rot)),
 					_mm_sub_ps(_mm_load_ps(&this->cy_mesh[x][y]), _mm_load_ps(&this->dy_mesh[x][y]))
@@ -448,49 +458,41 @@ void PresetOutputs::PerPixelMath_sse(const PipelineContext &context)
 
 void PresetOutputs::PerPixelMath(const PipelineContext &context)
 {
-#ifdef __SSE2__
-	PerPixelMath_sse(context);
-#else
+// #ifdef __SSE2__
+// 	PerPixelMath_sse(context);
+// #else
 	PerPixelMath_c(context);
-#endif
+//#endif
 }
 
 
 void PresetOutputs::Initialize ( int _gx, int _gy )
 {
-    assert(_gx > 0);
+    SetStaticPerPixel(_gx, _gy);
 
-    this->gx = _gx;
-    this->gy = _gy;
-
-	staticPerPixel = true;
-
-	assert(this->gx > 0);
 	int x;
-	this->x_mesh  = alloc_mesh( gx, gy );
-	this->y_mesh  = alloc_mesh( gx, gy );
-	this->sx_mesh = alloc_mesh( gx, gy );
-	this->sy_mesh = alloc_mesh( gx, gy );
-	this->dx_mesh = alloc_mesh( gx, gy );
-	this->dy_mesh = alloc_mesh( gx, gy );
-	this->cx_mesh = alloc_mesh( gx, gy );
-	this->cy_mesh = alloc_mesh( gx, gy );
-	this->zoom_mesh = alloc_mesh( gx, gy );
-	this->zoomexp_mesh = alloc_mesh( gx, gy );
-	this->rot_mesh = alloc_mesh( gx, gy );
+	this->sx_mesh = alloc_mesh( gx_, gy_ );
+	this->sy_mesh = alloc_mesh( gx_, gy_ );
+	this->dx_mesh = alloc_mesh( gx_, gy_ );
+	this->dy_mesh = alloc_mesh( gx_, gy_ );
+	this->cx_mesh = alloc_mesh( gx_, gy_ );
+	this->cy_mesh = alloc_mesh( gx_, gy_ );
+	this->zoom_mesh = alloc_mesh( gx_, gy_ );
+	this->zoomexp_mesh = alloc_mesh( gx_, gy_ );
+	this->rot_mesh = alloc_mesh( gx_, gy_ );
 
-	this->warp_mesh = alloc_mesh( gx, gy );
-	this->rad_mesh = alloc_mesh( gx, gy );
-	this->orig_x  = alloc_mesh( gx, gy );
-	this->orig_y  = alloc_mesh( gx, gy );
+	this->warp_mesh = alloc_mesh( gx_, gy_ );
+	this->rad_mesh = alloc_mesh( gx_, gy_ );
+	this->orig_x  = alloc_mesh( gx_, gy_ );
+	this->orig_y  = alloc_mesh( gx_, gy_ );
 
 	//initialize reference grid values
-	for (x = 0; x < gx; x++)
+	for (x = 0; x < gx_; x++)
 	{
-		for (int y = 0; y < gy; y++)
+		for (int y = 0; y < gy_; y++)
 		{
-			float origx = x / (float) (gx - 1);
-			float origy = -((y / (float) (gy - 1)) - 1);
+			float origx = x / (float) (gx_ - 1);
+			float origy = -((y / (float) (gy_ - 1)) - 1);
 
 			rad_mesh[x][y]=hypot ( ( origx-.5 ) *2, ( origy-.5 ) *2 ) * .7071067;
 			orig_x[x][y] = (origx - .5) * 2;
@@ -528,136 +530,116 @@ void PresetInputs::resetMesh()
 
 
 #ifdef USE_MERGE_PRESET_CODE
-void PresetMerger::MergePresets(PresetOutputs & A, PresetOutputs & B, double ratio, int gx, int gy)
-{
-
-double invratio = 1.0 - ratio;
-  //Merge Simple Waveforms
+void PresetMerger::MergePresets(PresetOutputs &A, PresetOutputs &B,
+                                double ratio, int gx, int gy) {
+  double invratio = 1.0 - ratio;
+  // Merge Simple Waveforms
   //
   // All the mess is because of Waveform 7, which is two lines.
   //
 
+  // Merge Custom Shapes and Custom Waves
+  for (auto &shape : A.customShapes) {
+    shape->a *= invratio;
+    shape->a2 *= invratio;
+    shape->border_a *= invratio;
+  }
 
-  //Merge Custom Shapes and Custom Waves
+  for (auto &shape : B.customShapes) {
+    shape->a *= ratio;
+    shape->a2 *= ratio;
+    shape->border_a *= ratio;
+    A.customShapes.push_back(shape);
+  }
 
-  for (PresetOutputs::cshape_container::iterator pos = A.customShapes.begin();
-	pos != A.customShapes.end(); ++pos)
-    {
-       (*pos)->a *= invratio;
-       (*pos)->a2 *= invratio;
-       (*pos)->border_a *= invratio;
+  for (auto &wave : A.customWaves) {
+    wave->a *= invratio;
+    for (int x = 0; x < wave->samples; ++x) {
+      wave->a_mesh[x] *= invratio;
     }
+  }
 
-  for (PresetOutputs::cshape_container::iterator pos = B.customShapes.begin();
-	pos != B.customShapes.end(); ++pos)
-    {
-       (*pos)->a *= ratio;
-       (*pos)->a2 *= ratio;
-       (*pos)->border_a *= ratio;
-
-        A.customShapes.push_back(*pos);
-
+  for (auto &wave : B.customWaves) {
+    wave->a *= invratio;
+    for (int x = 0; x < wave->samples; ++x) {
+      wave->a_mesh[x] *= ratio;
     }
- for (PresetOutputs::cwave_container::iterator pos = A.customWaves.begin();
-	pos != A.customWaves.end(); ++pos)
-    {
-       (*pos)->a *= invratio;
-      for (int x=0; x <   (*pos)->samples; x++)
-	{
-	   (*pos)->a_mesh[x]= (*pos)->a_mesh[x]*invratio;
-	}
+    A.customWaves.push_back(wave);
+  }
+
+  // Interpolate Per-Pixel mesh
+  for (int x = 0; x < gx; x++) {
+    for (int y = 0; y < gy; y++) {
+      A.x_mesh_at(x, y) =
+          A.x_mesh_at(x, y) * invratio + B.x_mesh_at(x, y) * ratio;
     }
-
-  for (PresetOutputs::cwave_container::iterator pos = B.customWaves.begin();
-	pos != B.customWaves.end(); ++pos)
-    {
-       (*pos)->a *= ratio;
-      for (int x=0; x < (*pos)->samples; x++)
-	{
-	   (*pos)->a_mesh[x]= (*pos)->a_mesh[x]*ratio;
-	}
-       A.customWaves.push_back(*pos);
+  }
+  for (int x = 0; x < gx; x++) {
+    for (int y = 0; y < gy; y++) {
+      A.y_mesh_at(x, y) =
+          A.y_mesh_at(x, y) * invratio + B.y_mesh_at(x, y) * ratio;
     }
+  }
 
-
-  //Interpolate Per-Pixel mesh
-
-  for (int x=0;x<gx;x++)
-    {
-      for(int y=0;y<gy;y++)
-	{
-	  A.x_mesh[x][y]  = A.x_mesh[x][y]* invratio + B.x_mesh[x][y]*ratio;
-	}
-    }
- for (int x=0;x<gx;x++)
-    {
-      for(int y=0;y<gy;y++)
-	{
-	  A.y_mesh[x][y]  = A.y_mesh[x][y]* invratio + B.y_mesh[x][y]*ratio;
-	}
-    }
-
-
-
- //Interpolate PerFrame floats
+  // Interpolate PerFrame floats
 
   A.screenDecay = A.screenDecay * invratio + B.screenDecay * ratio;
 
-  A.wave.r = A.wave.r* invratio + B.wave.r*ratio;
-  A.wave.g = A.wave.g* invratio + B.wave.g*ratio;
-  A.wave.b = A.wave.b* invratio + B.wave.b*ratio;
-  A.wave.a = A.wave.a* invratio + B.wave.a*ratio;
-  A.wave.x = A.wave.x* invratio + B.wave.x*ratio;
-  A.wave.y = A.wave.y* invratio + B.wave.y*ratio;
-  A.wave.mystery = A.wave.mystery* invratio + B.wave.mystery*ratio;
+  A.wave->r = A.wave->r * invratio + B.wave->r * ratio;
+  A.wave->g = A.wave->g * invratio + B.wave->g * ratio;
+  A.wave->b = A.wave->b * invratio + B.wave->b * ratio;
+  A.wave->a = A.wave->a * invratio + B.wave->a * ratio;
+  A.wave->x = A.wave->x * invratio + B.wave->x * ratio;
+  A.wave->y = A.wave->y * invratio + B.wave->y * ratio;
+  A.wave->mystery = A.wave->mystery * invratio + B.wave->mystery * ratio;
 
-  A.border.outer_size = A.border.outer_size* invratio + B.border.outer_size*ratio;
-  A.border.outer_r = A.border.outer_r* invratio + B.border.outer_r*ratio;
-  A.border.outer_g = A.border.outer_g* invratio + B.border.outer_g*ratio;
-  A.border.outer_b = A.border.outer_b* invratio + B.border.outer_b*ratio;
-  A.border.outer_a = A.border.outer_a* invratio + B.border.outer_a*ratio;
+  A.border->outer_size =
+      A.border->outer_size * invratio + B.border->outer_size * ratio;
+  A.border->outer_r = A.border->outer_r * invratio + B.border->outer_r * ratio;
+  A.border->outer_g = A.border->outer_g * invratio + B.border->outer_g * ratio;
+  A.border->outer_b = A.border->outer_b * invratio + B.border->outer_b * ratio;
+  A.border->outer_a = A.border->outer_a * invratio + B.border->outer_a * ratio;
 
-  A.border.inner_size = A.border.inner_size* invratio + B.border.inner_size*ratio;
-  A.border.inner_r = A.border.inner_r* invratio + B.border.inner_r*ratio;
-  A.border.inner_g = A.border.inner_g* invratio + B.border.inner_g*ratio;
-  A.border.inner_b = A.border.inner_b* invratio + B.border.inner_b*ratio;
-  A.border.inner_a = A.border.inner_a* invratio + B.border.inner_a*ratio;
+  A.border->inner_size =
+      A.border->inner_size * invratio + B.border->inner_size * ratio;
+  A.border->inner_r = A.border->inner_r * invratio + B.border->inner_r * ratio;
+  A.border->inner_g = A.border->inner_g * invratio + B.border->inner_g * ratio;
+  A.border->inner_b = A.border->inner_b * invratio + B.border->inner_b * ratio;
+  A.border->inner_a = A.border->inner_a * invratio + B.border->inner_a * ratio;
 
-  A.mv.a  = A.mv.a* invratio + B.mv.a*ratio;
-  A.mv.r  = A.mv.r* invratio + B.mv.r*ratio;
-  A.mv.g  = A.mv.g* invratio + B.mv.g*ratio;
-  A.mv.b  = A.mv.b* invratio + B.mv.b*ratio;
-  A.mv.length = A.mv.length* invratio + B.mv.length*ratio;
-  A.mv.x_num = A.mv.x_num* invratio + B.mv.x_num*ratio;
-  A.mv.y_num = A.mv.y_num* invratio + B.mv.y_num*ratio;
-  A.mv.y_offset = A.mv.y_offset* invratio + B.mv.y_offset*ratio;
-  A.mv.x_offset = A.mv.x_offset* invratio + B.mv.x_offset*ratio;
+  A.mv->a = A.mv->a * invratio + B.mv->a * ratio;
+  A.mv->r = A.mv->r * invratio + B.mv->r * ratio;
+  A.mv->g = A.mv->g * invratio + B.mv->g * ratio;
+  A.mv->b = A.mv->b * invratio + B.mv->b * ratio;
+  A.mv->length = A.mv->length * invratio + B.mv->length * ratio;
+  A.mv->x_num = A.mv->x_num * invratio + B.mv->x_num * ratio;
+  A.mv->y_num = A.mv->y_num * invratio + B.mv->y_num * ratio;
+  A.mv->y_offset = A.mv->y_offset * invratio + B.mv->y_offset * ratio;
+  A.mv->x_offset = A.mv->x_offset * invratio + B.mv->x_offset * ratio;
 
+  A.fRating = A.fRating * invratio + B.fRating * ratio;
+  A.fGammaAdj = A.fGammaAdj * invratio + B.fGammaAdj * ratio;
+  A.videoEcho->zoom = A.videoEcho->zoom * invratio + B.videoEcho->zoom * ratio;
+  A.videoEcho->a = A.videoEcho->a * invratio + B.videoEcho->a * ratio;
 
-  A.fRating = A.fRating* invratio + B.fRating*ratio;
-  A.fGammaAdj = A.fGammaAdj* invratio + B.fGammaAdj*ratio;
-  A.videoEcho.zoom = A.videoEcho.zoom* invratio + B.videoEcho.zoom*ratio;
-  A.videoEcho.a = A.videoEcho.a* invratio + B.videoEcho.a*ratio;
+  A.fWarpAnimSpeed = A.fWarpAnimSpeed * invratio + B.fWarpAnimSpeed * ratio;
+  A.fWarpScale = A.fWarpScale * invratio + B.fWarpScale * ratio;
+  A.fShader = A.fShader * invratio + B.fShader * ratio;
 
+  // Switch bools and discrete values halfway.  Maybe we should do some
+  // interesting stuff here.
 
-  A.fWarpAnimSpeed = A.fWarpAnimSpeed* invratio + B.fWarpAnimSpeed*ratio;
-  A.fWarpScale = A.fWarpScale* invratio + B.fWarpScale*ratio;
-  A.fShader = A.fShader* invratio + B.fShader*ratio;
-
-  //Switch bools and discrete values halfway.  Maybe we should do some interesting stuff here.
-
-  if (ratio > 0.5)
-    {
-      A.videoEcho.orientation = B.videoEcho.orientation;
-      A.textureWrap = B.textureWrap;
-      A.bDarkenCenter = B.bDarkenCenter;
-      A.bRedBlueStereo = B.bRedBlueStereo;
-      A.bBrighten = B.bBrighten;
-      A.bDarken = B.bDarken;
-      A.bSolarize = B.bSolarize;
-      A.bInvert = B.bInvert;
-      A.bMotionVectorsOn = B.bMotionVectorsOn;
-    }
+  if (ratio > 0.5) {
+    A.videoEcho.orientation = B.videoEcho.orientation;
+    A.textureWrap = B.textureWrap;
+    A.bDarkenCenter = B.bDarkenCenter;
+    A.bRedBlueStereo = B.bRedBlueStereo;
+    A.bBrighten = B.bBrighten;
+    A.bDarken = B.bDarken;
+    A.bSolarize = B.bSolarize;
+    A.bInvert = B.bInvert;
+    A.bMotionVectorsOn = B.bMotionVectorsOn;
+  }
 
   return;
 }

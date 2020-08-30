@@ -55,48 +55,48 @@ void resetPresetOutputs(PresetOutputs * presetOutputs)
 
     presetOutputs->screenDecay=.98;
 
-    presetOutputs->wave.r= 1.0;
-    presetOutputs->wave.g= 0.2;
-    presetOutputs->wave.b= 0.0;
-    presetOutputs->wave.x= 0.5;
-    presetOutputs->wave.y= 0.5;
-    presetOutputs->wave.mystery= 0.0;
+    presetOutputs->wave->r= 1.0;
+    presetOutputs->wave->g= 0.2;
+    presetOutputs->wave->b= 0.0;
+    presetOutputs->wave->x= 0.5;
+    presetOutputs->wave->y= 0.5;
+    presetOutputs->wave->mystery= 0.0;
 
-    presetOutputs->border.outer_size= 0.0;
-    presetOutputs->border.outer_r= 0.0;
-    presetOutputs->border.outer_g= 0.0;
-    presetOutputs->border.outer_b= 0.0;
-    presetOutputs->border.outer_a= 0.0;
+    presetOutputs->border->outer_size= 0.0;
+    presetOutputs->border->outer_r= 0.0;
+    presetOutputs->border->outer_g= 0.0;
+    presetOutputs->border->outer_b= 0.0;
+    presetOutputs->border->outer_a= 0.0;
 
-    presetOutputs->border.inner_size = 0.0;
-    presetOutputs->border.inner_r = 0.0;
-    presetOutputs->border.inner_g = 0.0;
-    presetOutputs->border.inner_b = 0.0;
-    presetOutputs->border.inner_a = 0.0;
+    presetOutputs->border->inner_size = 0.0;
+    presetOutputs->border->inner_r = 0.0;
+    presetOutputs->border->inner_g = 0.0;
+    presetOutputs->border->inner_b = 0.0;
+    presetOutputs->border->inner_a = 0.0;
 
-    presetOutputs->mv.a = 0.0;
-    presetOutputs->mv.r = 0.0;
-    presetOutputs->mv.g = 0.0;
-    presetOutputs->mv.b = 0.0;
-    presetOutputs->mv.length = 1.0;
-    presetOutputs->mv.x_num = 16.0;
-    presetOutputs->mv.y_num = 12.0;
-    presetOutputs->mv.x_offset = 0.02;
-    presetOutputs->mv.y_offset = 0.02;
+    presetOutputs->mv->a = 0.0;
+    presetOutputs->mv->r = 0.0;
+    presetOutputs->mv->g = 0.0;
+    presetOutputs->mv->b = 0.0;
+    presetOutputs->mv->length = 1.0;
+    presetOutputs->mv->x_num = 16.0;
+    presetOutputs->mv->y_num = 12.0;
+    presetOutputs->mv->x_offset = 0.02;
+    presetOutputs->mv->y_offset = 0.02;
 
 
     /* PER_FRAME CONSTANTS END */
     presetOutputs->fRating = 0;
     presetOutputs->fGammaAdj = 1.0;
-    presetOutputs->videoEcho.zoom = 1.0;
-    presetOutputs->videoEcho.a = 0;
-    presetOutputs->videoEcho.orientation = Normal;
+    presetOutputs->videoEcho->zoom = 1.0;
+    presetOutputs->videoEcho->a = 0;
+    presetOutputs->videoEcho->orientation = Normal;
 
-    presetOutputs->wave.additive = false;
-    presetOutputs->wave.dots = false;
-    presetOutputs->wave.thick = false;
-    presetOutputs->wave.modulateAlphaByVolume = 0;
-    presetOutputs->wave.maximizeColors = 0;
+    presetOutputs->wave->additive = false;
+    presetOutputs->wave->dots = false;
+    presetOutputs->wave->thick = false;
+    presetOutputs->wave->modulateAlphaByVolume = 0;
+    presetOutputs->wave->maximizeColors = 0;
     presetOutputs->textureWrap = 0;
     presetOutputs->bDarkenCenter = 0;
     presetOutputs->bRedBlueStereo = 0;
@@ -106,12 +106,12 @@ void resetPresetOutputs(PresetOutputs * presetOutputs)
     presetOutputs->bInvert = 0;
     presetOutputs->bMotionVectorsOn = 1;
 
-    presetOutputs->wave.a =1.0;
-    presetOutputs->wave.scale = 1.0;
-    presetOutputs->wave.smoothing = 0;
-    presetOutputs->wave.mystery = 0;
-    presetOutputs->wave.modOpacityEnd = 0;
-    presetOutputs->wave.modOpacityStart = 0;
+    presetOutputs->wave->a =1.0;
+    presetOutputs->wave->scale = 1.0;
+    presetOutputs->wave->smoothing = 0;
+    presetOutputs->wave->mystery = 0;
+    presetOutputs->wave->modOpacityEnd = 0;
+    presetOutputs->wave->modOpacityStart = 0;
     presetOutputs->fWarpAnimSpeed = 0;
     presetOutputs->fWarpScale = 0;
     presetOutputs->fShader = 0;
@@ -176,9 +176,9 @@ PresetOutputs* MilkdropPresetFactory::createPresetOutputs(int gx, int gy)
 	/* PER_FRAME CONSTANTS END */
 	presetOutputs->fRating = 0;
 	presetOutputs->fGammaAdj = 1.0;
-	presetOutputs->videoEcho.zoom = 1.0;
-	presetOutputs->videoEcho.a = 0;
-	presetOutputs->videoEcho.orientation = Normal;
+	presetOutputs->videoEcho->zoom = 1.0;
+	presetOutputs->videoEcho->a = 0;
+	presetOutputs->videoEcho->orientation = Normal;
 
 	presetOutputs->textureWrap = 0;
 	presetOutputs->bDarkenCenter = 0;

@@ -147,7 +147,7 @@ private:
   std::string m_fps;
   std::string m_toastMessage;
 
-  float* p;
+  std::shared_ptr<float> pixel_mesh_;
 
   int vstartx; /* view start x position - normally 0, but could be different if doing a subset of the window - like
                   for virtual reality */

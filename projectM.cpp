@@ -353,6 +353,10 @@ Pipeline * projectM::renderFrameOnlyPass1(Pipeline *pPipeline) /*pPipeline is a 
     }
 
 
+    if (!timeKeeper->IsSmoothing()) {
+        PipelineMerger::DisableBlending(m_activePreset->pipeline());
+    }
+
     if ( timeKeeper->IsSmoothing() && timeKeeper->SmoothRatio() <= 1.0 && !m_presetChooser->empty() )
     {
         //	 printf("start thread\n");
@@ -371,7 +375,7 @@ Pipeline * projectM::renderFrameOnlyPass1(Pipeline *pPipeline) /*pPipeline is a 
 #endif
 
 
-        pPipeline->setStaticPerPixel(settings().meshX, settings().meshY);
+        pPipeline->SetStaticPerPixel(settings().meshX, settings().meshY);
 
         assert(_matcher);
         PipelineMerger::mergePipelines( m_activePreset->pipeline(),
@@ -458,7 +462,7 @@ void projectM::renderFrameEndOnSeparatePasses(Pipeline *pPipeline) {
 
     if (pPipeline) {
        // mergePipelines() sets masterAlpha for each RenderItem, reset it before we forget
-       for (RenderItem *drawable : pPipeline->drawables) {
+       for (auto &drawable : pPipeline->drawables) {
            drawable->masterAlpha = 1.0;
        }
     pPipeline->drawables.clear();

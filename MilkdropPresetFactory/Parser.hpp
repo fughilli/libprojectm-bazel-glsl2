@@ -133,8 +133,8 @@ class Parser {
 public:
     static std::string lastLinePrefix;
     static line_mode_t line_mode;
-    static CustomWave *current_wave;
-    static CustomShape *current_shape;
+    static std::shared_ptr<CustomWave>current_wave;
+    static std::shared_ptr<CustomShape>current_shape;
     static int string_line_buffer_index;
     static char string_line_buffer[STRING_LINE_SIZE];
     static unsigned int line_count;
@@ -184,9 +184,9 @@ public:
     static void readStringUntil(std::istream & fs, std::string * out_buffer, bool wrapAround = true, const std::set<char> & skipList = std::set<char>()) ;
 
     static int string_to_float(char * string, float * float_ptr);
-    static int parse_shape_per_frame_init_eqn(std::istream & fs, CustomShape * custom_shape, MilkdropPreset * preset);
-    static int parse_shape_per_frame_eqn(std::istream & fs, CustomShape * custom_shape, MilkdropPreset * preset);
-    static int parse_wave_per_frame_eqn(std::istream & fs, CustomWave * custom_wave, MilkdropPreset * preset);
+    static int parse_shape_per_frame_init_eqn(std::istream & fs, std::shared_ptr<CustomShape> custom_shape, MilkdropPreset * preset);
+    static int parse_shape_per_frame_eqn(std::istream & fs, std::shared_ptr<CustomShape> custom_shape, MilkdropPreset * preset);
+    static int parse_wave_per_frame_eqn(std::istream & fs, std::shared_ptr<CustomWave> custom_wave, MilkdropPreset * preset);
     static bool wrapsToNextLine(const std::string & str);
 private:
   static Expr * _parse_gen_expr(std::istream & fs, TreeExpr * tree_expr, MilkdropPreset * preset);

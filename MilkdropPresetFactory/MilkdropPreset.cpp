@@ -90,19 +90,6 @@ MilkdropPreset::~MilkdropPreset()
 
   /// Testing deletion of render items by the preset. would be nice if it worked, 
   /// and seems to be working if you use a mutex on the preset switching.
-  
-  for (PresetOutputs::cwave_container::iterator pos = customWaves.begin(); 
-        pos != customWaves.end(); ++pos ) {
-  //  __android_log_print(ANDROID_LOG_ERROR, "projectM", "not freeing wave %x", *pos);
-    delete(*pos);
-  }
-
-  for (PresetOutputs::cshape_container::iterator pos = customShapes.begin(); 
-        pos != customShapes.end(); ++pos ) {
-//__android_log_print(ANDROID_LOG_ERROR, "projectM", "not freeing shape %x", *pos);
-
-        delete(*pos);
-  }
   customWaves.clear();
   customShapes.clear();
 
@@ -160,95 +147,59 @@ int MilkdropPreset::add_per_pixel_eqn(char * name, Expr * gen_expr)
   return PROJECTM_SUCCESS;
 }
 
-void MilkdropPreset::evalCustomShapeInitConditions()
-{
-
-  for (PresetOutputs::cshape_container::iterator pos = customShapes.begin(); pos != customShapes.end(); ++pos) {
-    assert(*pos);
-    (*pos)->evalInitConds();
+void MilkdropPreset::evalCustomShapeInitConditions() {
+  for (auto &shape : customShapes) {
+    shape->evalInitConds();
   }
 }
 
-
-void MilkdropPreset::evalCustomWaveInitConditions()
-{
-
-  for (PresetOutputs::cwave_container::iterator pos = customWaves.begin(); pos != customWaves.end(); ++pos) {
-    assert(*pos);
-   (*pos)->evalInitConds();
+void MilkdropPreset::evalCustomWaveInitConditions() {
+  for (auto &wave : customWaves) {
+    wave->evalInitConds();
+  }
 }
-}
-
 
 void MilkdropPreset::evalCustomWavePerFrameEquations()
 {
-
-  for (PresetOutputs::cwave_container::iterator pos = customWaves.begin(); pos != customWaves.end(); ++pos)
-  {
-
-    std::map<std::string, InitCond*> & init_cond_tree2 = (*pos)->init_cond_tree;
-    for (std::map<std::string, InitCond*>::iterator _pos = init_cond_tree2.begin(); _pos != init_cond_tree2.end(); ++_pos)
-    {
-      assert(_pos->second);
-      _pos->second->evaluate();
+  for (auto &wave : customWaves) {
+    for (auto &expression : wave->init_cond_tree) {
+      assert(expression.second);
+      expression.second->evaluate();
     }
-
-    std::vector<PerFrameEqn*> & per_frame_eqn_tree2 = (*pos)->per_frame_eqn_tree;
-    for (std::vector<PerFrameEqn*>::iterator _pos = per_frame_eqn_tree2.begin(); _pos != per_frame_eqn_tree2.end(); ++_pos)
-    {
-      (*_pos)->evaluate();
+    for (auto &expression : wave->per_frame_eqn_tree) {
+      expression->evaluate();
     }
   }
-
 }
 
 void MilkdropPreset::evalCustomShapePerFrameEquations()
 {
-
-  for (PresetOutputs::cshape_container::iterator pos = customShapes.begin(); pos != customShapes.end(); ++pos)
-  {
-
-    std::map<std::string, InitCond*> & init_cond_tree2 = (*pos)->init_cond_tree;
-    for (std::map<std::string, InitCond*>::iterator _pos = init_cond_tree2.begin(); _pos != init_cond_tree2.end(); ++_pos)
-    {
-      assert(_pos->second);
-      _pos->second->evaluate();
+  for (auto &wave : customShapes) {
+    for (auto &expression : wave->init_cond_tree) {
+      assert(expression.second);
+      expression.second->evaluate();
     }
-
-    std::vector<PerFrameEqn*> & per_frame_eqn_tree2 = (*pos)->per_frame_eqn_tree;
-    for (std::vector<PerFrameEqn*>::iterator _pos = per_frame_eqn_tree2.begin(); _pos != per_frame_eqn_tree2.end(); ++_pos)
-    {
-      (*_pos)->evaluate();
+    for (auto &expression : wave->per_frame_eqn_tree) {
+      expression->evaluate();
     }
   }
-
 }
 
-void MilkdropPreset::evalPerFrameInitEquations()
-{
-
-  for (std::map<std::string, InitCond*>::iterator pos = per_frame_init_eqn_tree.begin(); pos != per_frame_init_eqn_tree.end(); ++pos)
-  {
-    assert(pos->second);
-    pos->second->evaluate();
+void MilkdropPreset::evalPerFrameInitEquations() {
+  for (auto &expression : per_frame_init_eqn_tree) {
+    assert(expression.second);
+    expression.second->evaluate();
   }
-
 }
 
-void MilkdropPreset::evalPerFrameEquations()
-{
-
-  for (std::map<std::string, InitCond*>::iterator pos = init_cond_tree.begin(); pos != init_cond_tree.end(); ++pos)
-  {
-    assert(pos->second);
-    pos->second->evaluate();
+void MilkdropPreset::evalPerFrameEquations() {
+  for (auto &expression : init_cond_tree) {
+    assert(expression.second);
+    expression.second->evaluate();
   }
-
-  for (std::vector<PerFrameEqn*>::iterator pos = per_frame_eqn_tree.begin(); pos != per_frame_eqn_tree.end(); ++pos)
-  {
-    (*pos)->evaluate();
+  for (auto &expression : per_frame_eqn_tree) {
+    expression->evaluate();
   }
-
 }
 
 void MilkdropPreset::preloadInitialize() {
@@ -341,28 +292,17 @@ void MilkdropPreset::loadBuiltinParamsUnspecInitConds() {
 
 }
 
-void MilkdropPreset::loadCustomWaveUnspecInitConds()
-{
-
-  for (PresetOutputs::cwave_container::iterator pos = customWaves.begin(); pos != customWaves.end(); ++pos)
-  {
-    assert(*pos);
-    (*pos)->loadUnspecInitConds();
-  }
-
-}
-
-void MilkdropPreset::loadCustomShapeUnspecInitConds()
-{
-
-  for (PresetOutputs::cshape_container::iterator pos = customShapes.begin();
-        pos != customShapes.end(); ++pos)
-  {
-    assert(*pos);
-    (*pos)->loadUnspecInitConds();
+void MilkdropPreset::loadCustomWaveUnspecInitConds() {
+  for (auto &wave : customWaves) {
+    wave->loadUnspecInitConds();
   }
 }
 
+void MilkdropPreset::loadCustomShapeUnspecInitConds() {
+  for (auto &shape : customShapes) {
+    shape->loadUnspecInitConds();
+  }
+}
 
 void MilkdropPreset::evaluateFrame()
 {
@@ -389,8 +329,8 @@ void MilkdropPreset::evaluateFrame()
 
   // Setup pointers of the custom waves and shapes to the preset outputs instance
   /// @slow an extra O(N) per frame, could do this during eval
-  _presetOutputs.customWaves = PresetOutputs::cwave_container(customWaves);
-  _presetOutputs.customShapes = PresetOutputs::cshape_container(customShapes);
+  _presetOutputs.customWaves = std::vector<std::shared_ptr<CustomWave>>(customWaves);
+  _presetOutputs.customShapes = std::vector<std::shared_ptr<CustomShape>>(customShapes);
 
 }
 
@@ -527,4 +467,3 @@ const std::string & MilkdropPreset::name() const {
 
     return filename();
 }
-

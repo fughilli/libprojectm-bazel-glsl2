@@ -5,6 +5,12 @@
 const double PipelineMerger::e(2.71828182845904523536);
 const double PipelineMerger::s(0.5);
 
+void PipelineMerger::DisableBlending(const Pipeline& pipeline) {
+    for (auto& drawable : pipeline.drawables) {
+        drawable->masterAlpha = 1.0f;
+    }
+}
+
 void PipelineMerger::mergePipelines(Pipeline & a, Pipeline & b, Pipeline & out, RenderItemMatcher::MatchResults & results, RenderItemMergeFunction & mergeFunction, float ratio)
 
 {
@@ -18,40 +24,32 @@ void PipelineMerger::mergePipelines(Pipeline & a, Pipeline & b, Pipeline & out, 
 	out.drawables.clear();
 	out.compositeDrawables.clear();
 
-	for ( std::vector<RenderItem*>::const_iterator pos = a.drawables.begin();
-	        pos != a.drawables.end(); ++pos )
-	{
-		( *pos )->masterAlpha = invratio;
-		out.drawables.push_back ( *pos );
-	}
+    for(auto& drawable : a.drawables) {
+        drawable->masterAlpha = invratio;
+        out.drawables.push_back(drawable);
+    }
 
-	for ( std::vector<RenderItem*>::const_iterator pos = b.drawables.begin();
-	        pos != b.drawables.end();++pos )
-	{
-		( *pos )->masterAlpha = ratio;
-		out.drawables.push_back ( *pos );
-	}
+    for(auto & drawable : b.drawables) {
+        drawable->masterAlpha = ratio;
+        out.drawables.push_back(drawable);
+    }
 
     if(ratio < 0.5)
     {
         const double local_ratio = (invratio - 0.5) * 2;
 
-        for (std::vector<RenderItem*>::const_iterator pos = a.compositeDrawables.begin();
-        pos != a.compositeDrawables.end(); ++pos)
-        {
-            (*pos)->masterAlpha = local_ratio;
-            out.compositeDrawables.push_back(*pos);
+        for (auto& composite_drawable : a.compositeDrawables) {
+            composite_drawable->masterAlpha = local_ratio;
+            out.compositeDrawables.push_back(composite_drawable);
         }
     }
     else
     {
         const double local_ratio = (ratio - 0.5) * 2;
 
-        for (std::vector<RenderItem*>::const_iterator pos = b.compositeDrawables.begin();
-        pos != b.compositeDrawables.end();++pos)
-        {
-            (*pos)->masterAlpha = local_ratio;
-            out.compositeDrawables.push_back(*pos);
+        for(auto& composite_drawable : b.compositeDrawables) {
+            composite_drawable->masterAlpha = local_ratio;
+            out.compositeDrawables.push_back(composite_drawable);
         }
     }
 
@@ -89,24 +87,21 @@ void PipelineMerger::mergePipelines(Pipeline & a, Pipeline & b, Pipeline & out, 
 		}
 	*/
 
-	if (a.staticPerPixel && b.staticPerPixel)
-	{
-		out.staticPerPixel = true;
-		 for (int x=0;x<a.gx;x++)
-		    {
-		      for(int y=0;y<a.gy;y++)
-			{
-			  out.x_mesh[x][y]  = a.x_mesh[x][y]* invratio + b.x_mesh[x][y]*ratio;
-			}
-		    }
-		 for (int x=0;x<a.gx;x++)
-		    {
-		      for(int y=0;y<a.gy;y++)
-			{
-			  out.y_mesh[x][y]  = a.y_mesh[x][y]* invratio + b.y_mesh[x][y]*ratio;
-			}
-		    }
-	}
+    if (a.static_per_pixel() && b.static_per_pixel()) {
+      out.SetStaticPerPixel(a.mesh_width(), a.mesh_height());
+      for (int x = 0; x < a.mesh_width(); x++) {
+        for (int y = 0; y < a.mesh_height(); y++) {
+          out.x_mesh_at(x, y) =
+              a.x_mesh_at(x, y) * invratio + b.x_mesh_at(x, y) * ratio;
+        }
+      }
+      for (int x = 0; x < a.mesh_width(); x++) {
+        for (int y = 0; y < a.mesh_height(); y++) {
+          out.y_mesh_at(x, y) =
+              a.y_mesh_at(x, y) * invratio + b.y_mesh_at(x, y) * ratio;
+        }
+      }
+    }
 
     if(ratio < 0.5)
     {
