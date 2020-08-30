@@ -8,58 +8,61 @@
 #ifndef WAVEFORM_HPP_
 #define WAVEFORM_HPP_
 
-#include "Renderable.hpp"
+#include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
+
 #include <vector>
 
-class ColoredPoint
-{
-public:
-	float x;
-	float y;
-	float r;
-	float g;
-	float b;
-	float a;
+#include "Renderable.hpp"
 
-    ColoredPoint():x(0.5),y(0.5),r(1),g(1),b(1),a(1){}
+class ColoredPoint {
+ public:
+  glm::vec2 position;
+  glm::vec4 color;
+
+  ColoredPoint()
+      : position(glm::vec2(0.5, 0.5)), color(glm::vec4(1, 1, 1, 1)) {}
+
+  static constexpr ptrdiff_t kPositionOffset = 0;
+  static constexpr ptrdiff_t kColorOffset = sizeof(glm::vec4);
 };
 
-class WaveformContext
-{
-public:
-	float sample;
-	int samples;
-	int sample_int;
-	float left;
-	float right;
-	BeatDetect *music;
+class WaveformContext {
+ public:
+  float sample;
+  int samples;
+  int sample_int;
+  float left;
+  float right;
+  BeatDetect* music;
 
-    WaveformContext(int _samples, BeatDetect *_music):samples(_samples),music(_music){}
+  WaveformContext(int samples, BeatDetect* music)
+      : samples(samples), music(music) {}
 };
 
+class Waveform : public RenderItem {
+ public:
+  int samples;   /* number of samples associated with this wave form. Usually
+                    powers of 2 */
+  bool spectrum; /* spectrum data or pcm data */
+  bool dots;     /* draw wave as dots or lines */
+  bool thick;    /* draw thicker lines */
+  bool additive; /* add color values together */
 
-class Waveform : public RenderItem
-{
-public:
+  float scaling;   /* scale factor of waveform */
+  float smoothing; /* smooth factor of waveform */
+  int sep;         /* no idea what this is yet... */
 
-    int samples; /* number of samples associated with this wave form. Usually powers of 2 */
-    bool spectrum; /* spectrum data or pcm data */
-    bool dots; /* draw wave as dots or lines */
-    bool thick; /* draw thicker lines */
-    bool additive; /* add color values together */
+  Waveform(int _samples);
+  void InitVertexAttrib();
+  void Draw(RenderContext &context);
 
-    float scaling; /* scale factor of waveform */
-    float smoothing; /* smooth factor of waveform */
-    int sep;  /* no idea what this is yet... */
-
-    Waveform(int _samples);
-    void InitVertexAttrib();
-    void Draw(RenderContext &context);
-
-private:
-	virtual ColoredPoint PerPoint(ColoredPoint p, const WaveformContext context)=0;
-	std::vector<ColoredPoint> points;
-	std::vector<float> pointContext;
-
+ private:
+  virtual ColoredPoint PerPoint(ColoredPoint p,
+                                const WaveformContext& context) = 0;
+  std::vector<ColoredPoint> points;
+  std::vector<float> pointContext;
+  std::vector<float> left_channel_buffer_;
+  std::vector<float> right_channel_buffer_;
 };
 #endif /* WAVEFORM_HPP_ */

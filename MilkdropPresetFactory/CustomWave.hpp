@@ -58,7 +58,7 @@ public:
     /** Destructor is necessary so we can free the per point matrices **/
     virtual ~CustomWave();
 
-    ColoredPoint PerPoint(ColoredPoint p, const WaveformContext context);
+    ColoredPoint PerPoint(ColoredPoint p, const WaveformContext& context) override;
 
     /* Numerical id */
     int id;

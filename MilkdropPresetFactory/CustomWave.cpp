@@ -497,7 +497,7 @@ void CustomWave::evalInitConds()
 
 }
 
-ColoredPoint CustomWave::PerPoint(ColoredPoint p, const WaveformContext context)
+ColoredPoint CustomWave::PerPoint(ColoredPoint p, const WaveformContext& context)
 {
     if (nullptr == per_point_program)
     {
@@ -529,12 +529,12 @@ ColoredPoint CustomWave::PerPoint(ColoredPoint p, const WaveformContext context)
 
     per_point_program->eval(context.sample_int, -1);
 
-    p.a = a_mesh[context.sample_int];
-    p.r = r_mesh[context.sample_int];
-    p.g = g_mesh[context.sample_int];
-    p.b = b_mesh[context.sample_int];
-    p.x = x_mesh[context.sample_int];
-    p.y = y_mesh[context.sample_int];
+    p.color.a = a_mesh[context.sample_int];
+    p.color.r = r_mesh[context.sample_int];
+    p.color.g = g_mesh[context.sample_int];
+    p.color.b = b_mesh[context.sample_int];
+    p.position.x = x_mesh[context.sample_int];
+    p.position.y = y_mesh[context.sample_int];
 
     return p;
 }

@@ -5,124 +5,152 @@
  *      Author: pete
  */
 
-#include "projectM-opengl.h"
 #include "Waveform.hpp"
+
 #include <algorithm>
 #include <cmath>
-#include "StaticShaders.hpp"
+#include <glm/gtc/type_ptr.hpp>
+#include <memory>
+
 #include "BeatDetect.hpp"
 #include "ShaderEngine.hpp"
-#include <glm/gtc/type_ptr.hpp>
+#include "StaticShaders.hpp"
+#include "projectM-opengl.h"
 #ifdef WIN32
 #include <functional>
 #endif /** WIN32 */
 
-typedef float floatPair[2];
+namespace {
+constexpr int kDefaultTextureSize = 512;
+constexpr int kPositionVertexAttribIndex = 0;
+constexpr int kColorVertexAttribIndex = 1;
+constexpr float kFreqDomainCoefficient = 0.015f;
+constexpr float kTimeDomainCoefficient = 1.0f;
+constexpr int kThickLineMultiplier = 2;
+constexpr int kThinLineMultiplier = 1;
+}  // namespace
 
 Waveform::Waveform(int _samples)
-: RenderItem(),samples(_samples), points(_samples), pointContext(_samples)
-{
+    : RenderItem(),
+      samples(_samples),
+      points(_samples),
+      pointContext(_samples),
+      left_channel_buffer_(_samples),
+      right_channel_buffer_(_samples) {
+  spectrum = false; /* spectrum data or pcm data */
+  dots = false;     /* draw wave as dots or lines */
+  thick = false;    /* draw thicker lines */
+  additive = false; /* add color values together */
 
-	spectrum = false; /* spectrum data or pcm data */
-	dots = false; /* draw wave as dots or lines */
-	thick = false; /* draw thicker lines */
-	additive = false; /* add color values together */
+  scaling = 1;   /* scale factor of waveform */
+  smoothing = 0; /* smooth factor of waveform */
+  sep = 0;
 
-	scaling= 1; /* scale factor of waveform */
-	smoothing = 0; /* smooth factor of waveform */
-	sep = 0;
-
-    Init();
+  Init();
 }
 
 void Waveform::InitVertexAttrib() {
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
+  glEnableVertexAttribArray(0);
+  glEnableVertexAttribArray(1);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(ColoredPoint), (void*)0);    // points
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(ColoredPoint), (void*)(sizeof(float)*2));    // colors
+  glVertexAttribPointer(
+      0, 2, GL_FLOAT, GL_FALSE, sizeof(ColoredPoint),
+      reinterpret_cast<void *>(ColoredPoint::kPositionOffset));  // points
+  glVertexAttribPointer(
+      1, 4, GL_FLOAT, GL_FALSE, sizeof(ColoredPoint),
+      reinterpret_cast<void *>(ColoredPoint::kColorOffset));  // colors
 }
 
-void Waveform::Draw(RenderContext &context)
- {
-    // scale PCM data based on vol_history to make it more or less independent of the application output volume
-    const float  vol_scale = context.beatDetect->getPCMScale();
+void Waveform::Draw(RenderContext &context) {
+  // scale PCM data based on vol_history to make it more or less independent of
+  // the application output volume
+  const float vol_scale =
+      context.beatDetect->getPCMScale() * scaling *
+      (spectrum ? kFreqDomainCoefficient : kTimeDomainCoefficient);
 
-    float *value1 = new float[samples];
-	float *value2 = new float[samples];
-	context.beatDetect->pcm->getPCM( value1, samples, 0, spectrum, smoothing, 0);
-	context.beatDetect->pcm->getPCM( value2, samples, 1, spectrum, smoothing, 0);
+  context.beatDetect->pcm->getPCM(left_channel_buffer_.data(), samples, 0,
+                                  spectrum, smoothing, 0);
+  context.beatDetect->pcm->getPCM(right_channel_buffer_.data(), samples, 1,
+                                  spectrum, smoothing, 0);
 
-	float mult= scaling*( spectrum ? 0.015f :1.0f);
-#ifdef WIN32
-	std::transform(&value1[0], &value1[samples], &value1[0], bind(std::multiplies<float>(), std::placeholders::_1, mult));
-	std::transform(&value2[0], &value2[samples], &value2[0], bind(std::multiplies<float>(), std::placeholders::_1, mult));
-#else
-	std::transform(&value1[0], &value1[samples], &value1[0], std::bind(std::multiplies<float>(), std::placeholders::_1, mult));
-	std::transform(&value2[0], &value2[samples], &value2[0], std::bind(std::multiplies<float>(), std::placeholders::_1, mult));
-#endif /** WIN32 */
+  for (auto &sample : left_channel_buffer_) {
+    sample *= vol_scale;
+  }
+  for (auto &sample : right_channel_buffer_) {
+    sample *= vol_scale;
+  }
 
-	WaveformContext waveContext(samples, context.beatDetect);
+  WaveformContext wave_context(samples, context.beatDetect);
 
-	for(int x=0;x< samples;x++)
-	{
-		waveContext.sample = x/(float)(samples - 1);
-		waveContext.sample_int = x;
-		waveContext.left  = vol_scale * value1[x];
-		waveContext.right = vol_scale * value2[x];
+  for (int x = 0; x < samples; ++x) {
+    wave_context.sample = x / static_cast<float>(samples - 1);
+    wave_context.sample_int = x;
+    wave_context.left = vol_scale * left_channel_buffer_[x];
+    wave_context.right = vol_scale * right_channel_buffer_[x];
 
-		points[x] = PerPoint(points[x],waveContext);
-	}
+    points[x] = PerPoint(points[x], wave_context);
+  }
 
-    std::vector<ColoredPoint> points_transf = points;
+  std::vector<ColoredPoint> points_transformed = points;
 
-    for (std::vector<ColoredPoint>::iterator iter = points_transf.begin(); iter != points_transf.end(); ++iter) {
-        (*iter).y = -( (*iter).y-1);
-        (*iter).a *= masterAlpha;
-    }
+  for (auto &point : points_transformed) {
+    point.position.y = 1 - point.position.y;
+    point.color.a *= masterAlpha;
+  }
 
-    glBindBuffer(GL_ARRAY_BUFFER, m_vboID);
+  glBindBuffer(GL_ARRAY_BUFFER, m_vboID);
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ColoredPoint) * samples, NULL, GL_DYNAMIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ColoredPoint) * samples, &points_transf[0], GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(ColoredPoint) * samples, nullptr,
+               GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(ColoredPoint) * samples,
+               points_transformed.data(), GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glUseProgram(StaticShaders::Get()->program_v2f_c4f_->GetId());
+  glUseProgram(StaticShaders::Get()->program_v2f_c4f_->GetId());
 
-    glUniformMatrix4fv(StaticShaders::Get()->uniform_v2f_c4f_vertex_tranformation_, 1, GL_FALSE, glm::value_ptr(context.mat_ortho));
+  glUniformMatrix4fv(
+      StaticShaders::Get()->uniform_v2f_c4f_vertex_tranformation_, 1, GL_FALSE,
+      glm::value_ptr(context.mat_ortho));
 
-	if (additive)  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-	else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  if (additive) {
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+  } else {
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  }
 
-	if (thick)
-	{
-		glLineWidth(context.texsize <= 512 ? 2 : 2*context.texsize/512);
-
+  int thick_line_width =
+      context.texsize <= kDefaultTextureSize
+          ? kThickLineMultiplier
+          : kThickLineMultiplier * context.texsize / kDefaultTextureSize;
+  int thin_line_width =
+      context.texsize <= kDefaultTextureSize
+          ? kThinLineMultiplier
+          : kThinLineMultiplier * context.texsize / kDefaultTextureSize;
+  if (thick) {
+    glLineWidth(thick_line_width);
 #ifndef GL_TRANSITION
-		glPointSize(context.texsize <= 512 ? 2 : 2*context.texsize/512);
+    glPointSize(thick_line_width);
 #endif
-        glUniform1f(StaticShaders::Get()->uniform_v2f_c4f_vertex_point_size_, context.texsize <= 512 ? 2 : 2*context.texsize/512);
-	}
-    else
-    {
+    glUniform1f(StaticShaders::Get()->uniform_v2f_c4f_vertex_point_size_,
+                thick_line_width);
+  } else {
 #ifndef GL_TRANSITION
-        glPointSize(context.texsize <= 512 ? 1 : context.texsize/512);
+    glPointSize(thin_line_width);
 #endif
-        glUniform1f(StaticShaders::Get()->uniform_v2f_c4f_vertex_point_size_, context.texsize <= 512 ? 1 : context.texsize/512);
-    }
+    glUniform1f(StaticShaders::Get()->uniform_v2f_c4f_vertex_point_size_,
+                thin_line_width);
+  }
 
-    glBindVertexArray(m_vaoID);
+  glBindVertexArray(m_vaoID);
 
-    if (dots)	glDrawArrays(GL_POINTS,0,samples);
-    else  	glDrawArrays(GL_LINE_STRIP,0,samples);
+  if (dots) {
+    glDrawArrays(GL_POINTS, 0, samples);
+  } else {
+    glDrawArrays(GL_LINE_STRIP, 0, samples);
+  }
 
-    glBindVertexArray(0);
-
-	glLineWidth(context.texsize < 512 ? 1 : context.texsize/512);
-
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	delete[] value1;
-	delete[] value2;
-   }
+  glBindVertexArray(0);
+  glLineWidth(thin_line_width);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
