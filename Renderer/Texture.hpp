@@ -1,15 +1,17 @@
 #ifndef TEXTURE_HPP_
 #define TEXTURE_HPP_
 
-#include "projectM-opengl.h"
 #include <map>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <vector>
+
+#include "projectM-opengl.h"
 
 // Wrapper for an OpenGL sampler instance.
 class Sampler {
-public:
+ public:
   // Constructs a new sampler, initializing its wrap and filter modes to the
   // provided values.
   Sampler(GLint wrap_mode, GLint filter_mode);
@@ -17,14 +19,16 @@ public:
 
   GLint GetId() const { return sampler_id_; }
 
-private:
+ private:
   GLuint sampler_id_;
   GLint wrap_mode_;
   GLint filter_mode_;
+
+  std::thread::id creation_thread_id_;
 };
 
 class Texture {
-public:
+ public:
   enum ImageType { k2d = 0, k3d };
 
   Texture(std::string name, ImageType image_type, int width, int height,
@@ -48,7 +52,7 @@ public:
   int GetHeight() const { return height_; }
   int GetDepth() const { return depth_; }
 
-private:
+ private:
   std::string name_;
   ImageType image_type_;
   GLuint texture_id_;
@@ -58,6 +62,8 @@ private:
   int depth_;
   bool is_user_texture_;
   std::map<std::pair<GLint, GLint>, std::shared_ptr<Sampler>> samplers_;
+
+  std::thread::id creation_thread_id_;
 };
 
 #endif /* TEXTURE_HPP_ */
