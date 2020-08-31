@@ -11,6 +11,21 @@
 
 class BeatDetect;
 
+class ColoredPoint {
+ public:
+  glm::vec2 position;
+  glm::vec4 color;
+
+  ColoredPoint()
+      : position(glm::vec2(0.5, 0.5)), color(glm::vec4(1, 1, 1, 1)) {}
+
+  ColoredPoint(glm::vec2 position, glm::vec4 color)
+      : position(position), color(color) {}
+
+  static constexpr ptrdiff_t kPositionOffset = 0;
+  static constexpr ptrdiff_t kColorOffset = sizeof(glm::vec4);
+};
+
 class RenderContext {
  public:
   float time;

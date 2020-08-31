@@ -141,19 +141,19 @@ TextureManager::TextureManager(std::string presets_url, int width, int height,
 
   auto noise_lq_lite =
       Image<float>::Create(kNoiseTexSizeSmall, kNoiseTexSizeSmall, 4);
-  FillPerlinScaled(4, 16, noise_lq_lite.get());
+  FillPerlinScaled(1, 1, noise_lq_lite.get());
   auto noise_lq = Image<float>::Create(kNoiseTexSize, kNoiseTexSize, 4);
   FillPerlin(noise_lq.get());
   auto noise_mq = Image<float>::Create(kNoiseTexSize, kNoiseTexSize, 4);
-  FillPerlinScaled(0.5f, 0.5f, noise_mq.get());
+  FillPerlinScaled(0.25f, 0.25f, noise_mq.get());
   auto noise_hq = Image<float>::Create(kNoiseTexSize, kNoiseTexSize, 4);
-  FillPerlinScaled(1 / 3.0f, 1 / 3.0f, noise_hq.get());
+  FillPerlinScaled(0.125f, 0.125f, noise_hq.get());
   auto noisevol_lq = Image<float>::Create(
       kNoiseTexSizeSmall, kNoiseTexSizeSmall, kNoiseTexSizeSmall, 4);
   FillPerlin(noisevol_lq.get());
   auto noisevol_hq = Image<float>::Create(
       kNoiseTexSizeSmall, kNoiseTexSizeSmall, kNoiseTexSizeSmall, 4);
-  FillPerlin(noisevol_hq.get());
+  FillPerlinScaled(0.25f, 0.25f, noisevol_hq.get());
   // TODO: populate these with a loop and a helper function
   InsertNamedTexture("noise_lq_lite", Texture::ImageType::k2d,
                      kNoiseTexSizeSmall, kNoiseTexSizeSmall, 0, false,

@@ -209,14 +209,14 @@ void FillPerlinScaled(float scale_x, float scale_y, Image<float>* image) {
       if (image->dimensionality() == Dimensionality::kDimensionality3d) {
         for (int z = 0; z < image->depth(); ++z) {
           for (int c = 0; c < image->num_channels() - 1; ++c) {
-            assert(scale_x == scale_y && scale_x == 1);
-            image->at(x, y, z, c) = Noise(x, y, z);
+            image->at(x, y, z, c) =
+                Noise3d(x, y, z, image->width(), 3, rand(), 0.2, scale_x);
           }
           image->at(x, y, z, image->num_channels() - 1) = 1.0f;
         }
       } else {
         for (int c = 0; c < image->num_channels() - 1; ++c) {
-          image->at(x, y, c) = Noise(x, y);
+          image->at(x, y, c) = InterpolatedNoise(x * scale_x, y * scale_y);
         }
         image->at(x, y, image->num_channels() - 1) = 1.0f;
       }
