@@ -180,19 +180,6 @@ std::shared_ptr<Shader> TranspilePresetShader(
   new_shader.textures_and_samplers["main"] =
       texture_manager->GetTextureAndSampler("main", GL_REPEAT, GL_LINEAR)
           .value();
-  new_shader.textures_and_samplers["fc_main"] =
-      texture_manager->GetTextureAndSampler("main", GL_CLAMP_TO_EDGE, GL_LINEAR)
-          .value();
-  new_shader.textures_and_samplers["pc_main"] =
-      texture_manager
-          ->GetTextureAndSampler("main", GL_CLAMP_TO_EDGE, GL_NEAREST)
-          .value();
-  new_shader.textures_and_samplers["fw_main"] =
-      texture_manager->GetTextureAndSampler("main", GL_REPEAT, GL_LINEAR)
-          .value();
-  new_shader.textures_and_samplers["pw_main"] =
-      texture_manager->GetTextureAndSampler("main", GL_REPEAT, GL_NEAREST)
-          .value();
 
   new_shader.textures_and_samplers["noise_lq"] =
       texture_manager

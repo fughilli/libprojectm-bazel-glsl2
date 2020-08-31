@@ -19,7 +19,7 @@
 //#define VERBOSE_LOGGING
 
 namespace {
-constexpr int kNumBlurTextures = 6;
+constexpr int kNumBlurTextures = 12;
 constexpr std::string_view kRandomTexturePrefix = "rand";
 constexpr std::string_view kDefaultTextureName = "noise_lq";
 
@@ -379,40 +379,32 @@ void TextureManager::ParseTextureSettingsFromName(
   bool invalid_name = false;
 
   if (name.size() > 3) {
-    switch (name[0]) {
-      case 'f':
-      case 'F':
-        update_filter_mode = GL_LINEAR;
-        break;
-      case 'p':
-      case 'P':
-        update_filter_mode = GL_NEAREST;
-        break;
-      default:
+    for (int i = 0; i < 2; ++i) {
+      switch (name[i]) {
+        case 'c':
+        case 'C':
+          update_wrap_mode = GL_MIRRORED_REPEAT;
+          break;
+        case 'w':
+        case 'W':
+          update_wrap_mode = GL_MIRRORED_REPEAT;
+          break;
+        case 'f':
+        case 'F':
+          update_filter_mode = GL_LINEAR;
+          break;
+        case 'p':
+        case 'P':
+          update_filter_mode = GL_NEAREST;
+          break;
+        default:
 #if defined(VERBOSE_LOGGING)
-        std::cerr << "qualified name has invalid format specifier: " << name[0]
-                  << std::endl;
+          std::cerr << "qualified name has invalid wrap/filter specifier: "
+                    << name[i] << std::endl;
 #endif
-        invalid_name = true;
-        break;
-    }
-
-    switch (name[1]) {
-      case 'c':
-      case 'C':
-        update_wrap_mode = GL_CLAMP_TO_EDGE;
-        break;
-      case 'w':
-      case 'W':
-        update_wrap_mode = GL_REPEAT;
-        break;
-      default:
-#if defined(VERBOSE_LOGGING)
-        std::cerr << "qualified name has invalid wrap specifier: " << name[0]
-                  << std::endl;
-#endif
-        invalid_name = true;
-        break;
+          invalid_name = true;
+          break;
+      }
     }
 
     if (name[2] != '_') {

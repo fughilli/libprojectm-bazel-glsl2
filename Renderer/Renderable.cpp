@@ -50,24 +50,35 @@ MotionVectors::MotionVectors() : RenderItem() { Init(); }
 Border::Border() : RenderItem() { Init(); }
 
 void DarkenCenter::InitVertexAttrib() {
-  float points_colors[6][6] = {
-      {0.5, 0.5, 0, 0, 0, (3.0f / 32.0f) * masterAlpha},
-      {0.45, 0.5, 0, 0, 0, 0},
-      {0.5, 0.45, 0, 0, 0, 0},
-      {0.55, 0.5, 0, 0, 0, 0},
-      {0.5, 0.55, 0, 0, 0, 0},
-      {0.45, 0.5, 0, 0, 0, 0}};
+  constexpr int kSubdivisions = 12;
+  constexpr float kRadius = 0.1f;
+  std::vector<ColoredPoint> points(kSubdivisions + 2);
+
+  points.push_back(
+      ColoredPoint(glm::vec2(0.5, 0.5), glm::vec4(0, 0, 0, masterAlpha)));
+
+  for (int i = 0; i < kSubdivisions; ++i) {
+    points.push_back(ColoredPoint(glm::vec2(cos(i * M_PI * 2 / kSubdivisions),
+                                            sin(i * M_PI * 2 / kSubdivisions)) *
+                                          kRadius +
+                                      glm::vec2(0.5, 0.5),
+                                  glm::vec4(0, 0, 0, 0)));
+  }
+  // Add the first point back to the vector.
+  points.push_back(points[1]);
 
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
 
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 6,
-                        (void *)0);  // points
-  glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 6,
-                        (void *)(sizeof(float) * 2));  // colors
+  glVertexAttribPointer(
+      0, 2, GL_FLOAT, GL_FALSE, sizeof(ColoredPoint),
+      reinterpret_cast<void *>(ColoredPoint::kPositionOffset));  // points
+  glVertexAttribPointer(
+      1, 4, GL_FLOAT, GL_FALSE, sizeof(ColoredPoint),
+      reinterpret_cast<void *>(ColoredPoint::kColorOffset));  // colors
 
-  glBufferData(GL_ARRAY_BUFFER, sizeof(points_colors), points_colors,
-               GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(ColoredPoint) * points.size(),
+               points.data(), GL_STATIC_DRAW);
 }
 
 void DarkenCenter::Draw(RenderContext &context) {
@@ -317,7 +328,7 @@ void Shape::Draw(RenderContext &context) {
   if (thickOutline == 1)
     glLineWidth(context.texsize < kDefaultTextureSize
                     ? 1
-                    : 2 * context.texsize / kDefaultTextureSize);
+                    : 4 * context.texsize / kDefaultTextureSize);
 
   glBindVertexArray(m_vaoID);
   glDrawArrays(GL_LINE_LOOP, 0, sides);

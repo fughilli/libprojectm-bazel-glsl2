@@ -26,8 +26,9 @@ constexpr int kPositionVertexAttribIndex = 0;
 constexpr int kColorVertexAttribIndex = 1;
 constexpr float kFreqDomainCoefficient = 0.015f;
 constexpr float kTimeDomainCoefficient = 1.0f;
-constexpr int kThickLineMultiplier = 2;
+constexpr int kThickLineMultiplier = 4;
 constexpr int kThinLineMultiplier = 1;
+constexpr float kVolumeMultplier = 5;
 }  // namespace
 
 Waveform::Waveform(int _samples)
@@ -100,9 +101,8 @@ void Waveform::Draw(RenderContext &context) {
 
   glBindBuffer(GL_ARRAY_BUFFER, m_vboID);
 
-  glBufferData(GL_ARRAY_BUFFER, sizeof(ColoredPoint) * samples, nullptr,
-               GL_DYNAMIC_DRAW);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(ColoredPoint) * samples,
+  glBufferData(GL_ARRAY_BUFFER,
+               sizeof(ColoredPoint) * points_transformed.size(),
                points_transformed.data(), GL_DYNAMIC_DRAW);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);

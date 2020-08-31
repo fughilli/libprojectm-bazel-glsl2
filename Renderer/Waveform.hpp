@@ -10,22 +10,9 @@
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
-
 #include <vector>
 
 #include "Renderable.hpp"
-
-class ColoredPoint {
- public:
-  glm::vec2 position;
-  glm::vec4 color;
-
-  ColoredPoint()
-      : position(glm::vec2(0.5, 0.5)), color(glm::vec4(1, 1, 1, 1)) {}
-
-  static constexpr ptrdiff_t kPositionOffset = 0;
-  static constexpr ptrdiff_t kColorOffset = sizeof(glm::vec4);
-};
 
 class WaveformContext {
  public:
@@ -55,7 +42,7 @@ class Waveform : public RenderItem {
 
   Waveform(int _samples);
   void InitVertexAttrib();
-  void Draw(RenderContext &context);
+  void Draw(RenderContext& context);
 
  private:
   virtual ColoredPoint PerPoint(ColoredPoint p,
